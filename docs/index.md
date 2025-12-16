@@ -23,41 +23,12 @@ GreenThumb is an open-source automated greenhouse project that combines IoT sens
 
 ## Quick Links
 
-<div class="grid cards" markdown>
-
--   :material-rocket-launch:{ .lg .middle } **Getting Started**
-
-    ---
-
-    Set up your own GreenThumb greenhouse
-
-    [:octicons-arrow-right-24: Installation](getting-started/installation.md)
-
--   :material-cog:{ .lg .middle } **Architecture**
-
-    ---
-
-    Understand the system design
-
-    [:octicons-arrow-right-24: Overview](architecture/overview.md)
-
--   :material-code-tags:{ .lg .middle } **API Reference**
-
-    ---
-
-    Explore the REST API endpoints
-
-    [:octicons-arrow-right-24: API Docs](api/reference.md)
-
--   :material-github:{ .lg .middle } **Source Code**
-
-    ---
-
-    View the code on GitHub
-
-    [:octicons-arrow-right-24: Repositories](architecture/repositories.md)
-
-</div>
+| Section | Description |
+|---------|-------------|
+| :material-rocket-launch: [**Getting Started**](getting-started/installation.md) | Set up your own GreenThumb greenhouse |
+| :material-cog: [**Architecture**](architecture/overview.md) | Understand the system design |
+| :material-code-tags: [**API Reference**](api/reference.md) | Explore the REST API endpoints |
+| :material-github: [**Source Code**](architecture/repositories.md) | View the code on GitHub |
 
 ## Technology Stack
 

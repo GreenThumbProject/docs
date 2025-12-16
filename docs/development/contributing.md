@@ -1,23 +1,20 @@
-# Contributing
+# Code Standards
 
-Thank you for your interest in contributing to GreenThumb!
+Code style guidelines for GreenThumb development.
 
-## Getting Started
+!!! note "Private Research Project"
+    This is a private research project. These standards are maintained for future team collaboration and code consistency.
 
-1. Fork the repository you want to contribute to
-2. Clone your fork locally
-3. Create a feature branch: `git checkout -b feature/your-feature`
-4. Make your changes
-5. Test thoroughly
-6. Submit a pull request
+## Python
 
-## Code Style
-
-### Python
+### Style Guide
 
 - Follow [PEP 8](https://peps.python.org/pep-0008/)
 - Use type hints for all functions
-- Write docstrings for public functions
+- Write docstrings for public functions and classes
+- Use functions and classes for reusable code
+
+### Example
 
 ```python
 def calculate_average(values: list[float]) -> float:
@@ -37,9 +34,18 @@ def calculate_average(values: list[float]) -> float:
     return sum(values) / len(values)
 ```
 
-### SQL
+### Naming Conventions
 
-- Use uppercase for SQL keywords
+| Type | Convention | Example |
+|------|------------|---------|
+| Functions | `snake_case` | `get_sensor_data()` |
+| Classes | `PascalCase` | `SensorModel` |
+| Constants | `UPPER_SNAKE` | `MAX_RETRIES` |
+| Variables | `snake_case` | `sensor_reading` |
+
+## SQL
+
+- Use UPPERCASE for SQL keywords
 - Use lowercase for table/column names
 - Use underscores for multi-word names
 
@@ -60,55 +66,32 @@ type(scope): description
 [optional body]
 ```
 
-Types:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `chore`: Maintenance tasks
+### Types
 
-Examples:
+| Type | Usage |
+|------|-------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation changes |
+| `refactor` | Code refactoring |
+| `test` | Adding tests |
+| `chore` | Maintenance tasks |
+
+### Examples
+
 ```
 feat(api): add endpoint for historical data
 fix(sensors): handle AHT10 read timeout
 docs(readme): update installation instructions
 ```
 
-## Pull Requests
+## Project Structure
 
-1. **Title**: Use conventional commit format
-2. **Description**: Explain what and why
-3. **Testing**: Describe how you tested
-4. **Screenshots**: Include for UI changes
+- Keep related code together in modules
+- Use clear, descriptive file names
+- Separate concerns (data access, business logic, API)
 
-### PR Checklist
+## Related
 
-- [ ] Code follows style guidelines
-- [ ] All tests pass
-- [ ] Documentation updated if needed
-- [ ] No sensitive data exposed
-
-## Repository-Specific Guidelines
-
-### rasp5
-
-- Test on actual Raspberry Pi before submitting
-- Docker build must succeed for ARM64
-- Update `compose.yaml` if adding services
-
-### greenthumb-core
-
-- Maintain backwards compatibility
-- Add tests for new features
-- Update `pyproject.toml` if adding dependencies
-
-### docs
-
-- Preview locally with `mkdocs serve`
-- Check all links work
-- Keep language consistent (EN/PT as appropriate)
-
-## Questions?
-
-Open an issue in the relevant repository or contact the maintainer directly.
+- [Local Setup](local-setup.md) - Development environment
+- [CI/CD](ci-cd.md) - Automated builds and deployment

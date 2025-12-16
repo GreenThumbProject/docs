@@ -4,6 +4,18 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
 
 ## Curto Prazo (Próximos 3 Meses)
 
+### Construção Física
+
+- [ ] **Construção da Estufa DWC**
+    - Construir a estufa física com Deep Water Culture
+    - Instalar sistema de aeração (bombas de ar, pedras porosas)
+    - Configurar reservatório e estações de cultivo
+
+- [ ] **Cultivo de Tomate Cereja**
+    - Iniciar cultivo de tomate cereja para coleta de dados
+    - Estabelecer métricas de crescimento base
+    - Documentar condições ambientais
+
 ### Integração de Hardware
 
 - [ ] **Integração do Sensor de pH**
@@ -39,31 +51,34 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
     - Estimativa de área foliar
     - Análise de cor para monitoramento de saúde
 
-## Médio Prazo (3-6 Meses)
+## Médio Prazo (Até Agosto de 2026 - Fim do PIBITI)
 
-### Suporte a Múltiplas Estufas
+!!! info "Foco da Pesquisa"
+    O objetivo principal durante o período do PIBITI é a **coleta de dados consistente e precisa** para futuros modelos de machine learning.
 
-- [ ] **Sistema de Registro de Dispositivos**
-    - Registrar múltiplos dispositivos Raspberry Pi
-    - Dashboard de gerenciamento centralizado
-    
-- [ ] **Gerenciamento de Frota**
-    - Monitorar todas as estufas em uma única interface
-    - Visualização agregada de dados
+### Coleta de Dados
 
-### Machine Learning
+- [ ] **Dados de Sensores Confiáveis**
+    - Monitoramento ambiental contínuo
+    - Validação automática de dados
+    - Padrões de alta qualidade de dados
 
-- [ ] **Predição de Crescimento**
-    - Treinar modelos com dados coletados
-    - Prever tempo de colheita baseado nas condições
-    
-- [ ] **Detecção de Anomalias**
-    - Detectar leituras incomuns de sensores
-    - Alertar sobre potenciais problemas
+- [ ] **Dataset de Imagens**
+    - Coleta sistemática de fotos
+    - Iluminação e ângulos consistentes
+    - Rotulação adequada e metadados
 
-- [ ] **Descoberta de Condições Ótimas**
-    - Identificar melhores condições para cada espécie
-    - Recomendar ajustes
+### Preparação para Machine Learning
+
+- [ ] **Curadoria do Dataset**
+    - Limpar e organizar dados coletados
+    - Criar divisões de treino/validação
+    - Documentar características dos dados
+
+- [ ] **Experimentos Iniciais de Modelos**
+    - Prototipar modelos de predição de crescimento
+    - Testar abordagens de detecção de anomalias
+    - Validar padrões de condições ótimas
 
 ### Aplicativo Mobile
 
@@ -72,44 +87,45 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
     - Notificações push
     - Controle remoto
 
-## Longo Prazo (6-12 Meses)
+## Longo Prazo (Após PIBITI)
 
-### Recursos Avançados
+### Desenvolvimento de Produto
 
-- [ ] **Colheita Robótica**
-    - Visão computacional para detecção de frutos
-    - Integração de braço robótico
-    
-- [ ] **Controle de Vidro Dinâmico**
-    - Vidro eletrocrômico para filtragem de luz
-    - Ajuste automático de transparência
-
-- [ ] **Visualização 3D do Crescimento**
-    - Fotogrametria de múltiplos ângulos
-    - Visualização de linha do tempo de crescimento
-
-### Comercialização
-
-- [ ] **Desenvolvimento de Produto**
-    - Kit de hardware padronizado
+- [ ] **Produto Comercial**
+    - Criar kit de estufa vendável
+    - Componentes de hardware padronizados
     - Instruções de montagem simplificadas
     - Imagens de software pré-configuradas
+
+### Gerenciamento de Frota
+
+- [ ] **Sistema de Registro de Dispositivos**
+    - Registrar múltiplos dispositivos Raspberry Pi
+    - Dashboard de gerenciamento centralizado
     
-- [ ] **Plataforma SaaS**
-    - Dashboard em nuvem para clientes
-    - Análise de dados como serviço
-    - Acesso a modelos de ML
+- [ ] **Suporte a Múltiplas Estufas**
+    - Monitorar múltiplas estufas em uma única interface
+    - Visualização agregada de dados
+
+### Machine Learning
+
+- [ ] **Predição de Crescimento**
+    - Treinar modelos com dados do PIBITI
+    - Prever tempo de colheita baseado nas condições
+    
+- [ ] **Detecção de Anomalias**
+    - Detectar leituras incomuns de sensores
+    - Alertar sobre potenciais problemas
+
+- [ ] **Descoberta de Condições Ótimas**
+    - Identificar melhores condições para cada espécie
+    - Recomendações automatizadas
 
 ### Pesquisa & Publicações
 
 - [ ] **Artigo Científico**
     - Publicar descobertas sobre otimização de crescimento
-    - Conjuntos de dados abertos para a comunidade
-    
-- [ ] **Lançamento Open Source**
-    - Documentação completa
-    - Esquemáticos de hardware
-    - Lista de materiais
+    - Compartilhar insights dos dados do PIBITI
 
 ## Cronograma de Desenvolvimento
 
@@ -118,28 +134,26 @@ gantt
     title Cronograma de Desenvolvimento GreenThumb
     dateFormat YYYY-MM
     
-    section Hardware
-    Sensores pH/CE     :2025-01, 2025-03
-    Controle LED/Bomba :2025-02, 2025-04
+    section Construção
+    Estufa DWC         :2025-01, 2025-03
+    Início Tomate      :2025-02, 2025-04
     
-    section Nuvem
-    Sync Supabase      :2025-02, 2025-04
-    Cloudflare R2      :2025-03, 2025-05
+    section Hardware
+    Sensores pH/CE     :2025-03, 2025-05
+    Controle LED/Bomba :2025-04, 2025-06
+    
+    section Coleta de Dados
+    Monitoramento      :2025-04, 2026-08
+    Coleta de Imagens  :2025-04, 2026-08
     
     section ML
-    VC Básica          :2025-04, 2025-06
-    Pred. Crescimento  :2025-06, 2025-09
-    Detec. Anomalias   :2025-08, 2025-11
+    Curadoria Dataset  :2026-01, 2026-06
+    Modelos Iniciais   :2026-04, 2026-08
     
     section Produto
-    Multi-estufa       :2025-05, 2025-08
-    App Mobile         :2025-07, 2025-10
-    Kit Comercial      :2025-10, 2025-12
+    Kit Comercial      :2026-09, 2027-03
+    Gerenc. Frota      :2027-01, 2027-06
 ```
-
-## Contribuindo
-
-Contribuições são bem-vindas! Veja nosso [Guia de Contribuição](../development/contributing.md) para detalhes.
 
 ---
 

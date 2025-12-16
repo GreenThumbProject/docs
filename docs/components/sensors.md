@@ -145,6 +145,66 @@ INSERT INTO sensor_capability (id_sensor_model, id_variable) VALUES
 | CO2 Sensor | Carbon Dioxide | Future |
 | O2 Sensor | Oxygen | Future |
 
+## Adding New Sensors
+
+Adding a new sensor to the GreenThumb system requires three steps:
+
+### 1. Connect the Hardware
+
+Connect the sensor to the Raspberry Pi's I2C bus (SDA/SCL pins) or other appropriate interface.
+
+### 2. Register in Database
+
+Add the sensor model to the database:
+
+```sql
+-- Register the sensor model
+INSERT INTO sensor_model (model_name, manufacturer) VALUES
+    ('NewSensorModel', 'Manufacturer');
+
+-- Define what the sensor measures
+INSERT INTO sensor_capability (id_sensor_model, id_variable) VALUES
+    ((SELECT id_sensor_model FROM sensor_model WHERE model_name = 'NewSensorModel'),
+     (SELECT id_variable FROM variable WHERE name = 'your_variable'));
+```
+
+### 3. Create Sensor Class
+
+Create a Python class in `greenthumb-core` that extends the `Sensor` base class:
+
+```python
+from greenthumb_core.rpi5 import Sensor
+
+class NewSensorModel(Sensor):
+    """Driver for NewSensorModel sensor."""
+    
+    def __init__(self, address: int = 0x00):
+        super().__init__()
+        self.address = address
+    
+    def read(self) -> tuple:
+        """Read sensor values."""
+        # Implement sensor-specific reading logic
+        value = self._read_from_i2c()
+        return (value,)
+```
+
+!!! warning "Class Name Must Match Database"
+    The class name must **exactly** match the `model_name` in the `sensor_model` table. The system uses this name to dynamically instantiate the correct sensor class.
+
+### 4. Restart Data Collection
+
+After adding the sensor, restart the data collection container:
+
+```bash
+docker compose restart data_collection
+```
+
+The system will automatically detect and start using the new sensor.
+
+!!! tip "Actuators (Coming Soon)"
+    The same pattern will be used for actuators, allowing easy addition of new output devices like pumps, LEDs, and valves.
+
 ## Troubleshooting
 
 ### Sensor Not Detected

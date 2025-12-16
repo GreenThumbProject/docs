@@ -4,6 +4,18 @@ This document outlines the planned features and improvements for the GreenThumb 
 
 ## Short-term (Next 3 Months)
 
+### Physical Construction
+
+- [ ] **DWC Greenhouse Construction**
+    - Build the physical Deep Water Culture greenhouse
+    - Install aeration system (air pumps, air stones)
+    - Set up reservoir and growing stations
+
+- [ ] **Cherry Tomato Cultivation**
+    - Start cherry tomato cultivation for data collection
+    - Establish baseline growth metrics
+    - Document environmental conditions
+
 ### Hardware Integration
 
 - [ ] **pH Sensor Integration**
@@ -39,31 +51,34 @@ This document outlines the planned features and improvements for the GreenThumb 
     - Leaf area estimation
     - Color analysis for health monitoring
 
-## Medium-term (3-6 Months)
+## Medium-term (Until August 2026 - PIBITI End)
 
-### Multiple Greenhouse Support
+!!! info "Research Focus"
+    The primary goal during the PIBITI period is **consistent and precise data collection** for future machine learning models.
 
-- [ ] **Device Registration System**
-    - Register multiple Raspberry Pi devices
-    - Central management dashboard
-    
-- [ ] **Fleet Management**
-    - Monitor all greenhouses from single interface
-    - Aggregate data visualization
+### Data Collection
 
-### Machine Learning
+- [ ] **Reliable Sensor Data**
+    - Continuous environmental monitoring
+    - Automated data validation
+    - High data quality standards
 
-- [ ] **Growth Prediction**
-    - Train models on collected data
-    - Predict harvest time based on conditions
-    
-- [ ] **Anomaly Detection**
-    - Detect unusual sensor readings
-    - Alert on potential problems
+- [ ] **Image Dataset**
+    - Systematic photo collection
+    - Consistent lighting and angles
+    - Proper labeling and metadata
 
-- [ ] **Optimal Condition Discovery**
-    - Identify best conditions for each plant species
-    - Recommend adjustments
+### Machine Learning Preparation
+
+- [ ] **Dataset Curation**
+    - Clean and organize collected data
+    - Create training/validation splits
+    - Document data characteristics
+
+- [ ] **Initial Model Experiments**
+    - Prototype growth prediction models
+    - Test anomaly detection approaches
+    - Validate optimal conditions patterns
 
 ### Mobile Application
 
@@ -72,44 +87,45 @@ This document outlines the planned features and improvements for the GreenThumb 
     - Push notifications
     - Remote control
 
-## Long-term (6-12 Months)
+## Long-term (After PIBITI)
 
-### Advanced Features
+### Product Development
 
-- [ ] **Robotic Harvesting**
-    - Computer vision for fruit detection
-    - Robotic arm integration
-    
-- [ ] **Dynamic Glass Control**
-    - Electrochromic glass for light filtering
-    - Automated transparency adjustment
-
-- [ ] **3D Growth Visualization**
-    - Photogrammetry from multiple angles
-    - Growth timeline visualization
-
-### Commercialization
-
-- [ ] **Product Development**
-    - Standardized hardware kit
+- [ ] **Commercial Product**
+    - Create a sellable greenhouse kit
+    - Standardized hardware components
     - Easy assembly instructions
     - Pre-configured software images
+
+### Fleet Management
+
+- [ ] **Device Registration System**
+    - Register multiple Raspberry Pi devices
+    - Central management dashboard
     
-- [ ] **SaaS Platform**
-    - Cloud dashboard for customers
-    - Data analytics as a service
-    - ML model access
+- [ ] **Multi-Greenhouse Support**
+    - Monitor multiple greenhouses from single interface
+    - Aggregate data visualization
+
+### Machine Learning
+
+- [ ] **Growth Prediction**
+    - Train models on collected PIBITI data
+    - Predict harvest time based on conditions
+    
+- [ ] **Anomaly Detection**
+    - Detect unusual sensor readings
+    - Alert on potential problems
+
+- [ ] **Optimal Condition Discovery**
+    - Identify best conditions for each plant species
+    - Automated recommendations
 
 ### Research & Publications
 
 - [ ] **Research Paper**
     - Publish findings on growth optimization
-    - Open data sets for community
-    
-- [ ] **Open Source Release**
-    - Complete documentation
-    - Hardware schematics
-    - Bill of materials
+    - Share insights from PIBITI data
 
 ## Technology Roadmap
 
@@ -118,28 +134,26 @@ gantt
     title GreenThumb Development Timeline
     dateFormat YYYY-MM
     
-    section Hardware
-    pH/EC Sensors      :2025-01, 2025-03
-    LED/Pump Control   :2025-02, 2025-04
+    section Construction
+    DWC Greenhouse     :2025-01, 2025-03
+    Cherry Tomato Start:2025-02, 2025-04
     
-    section Cloud
-    Supabase Sync      :2025-02, 2025-04
-    Cloudflare R2      :2025-03, 2025-05
+    section Hardware
+    pH/EC Sensors      :2025-03, 2025-05
+    LED/Pump Control   :2025-04, 2025-06
+    
+    section Data Collection
+    Sensor Monitoring  :2025-04, 2026-08
+    Image Collection   :2025-04, 2026-08
     
     section ML
-    Basic CV           :2025-04, 2025-06
-    Growth Prediction  :2025-06, 2025-09
-    Anomaly Detection  :2025-08, 2025-11
+    Dataset Curation   :2026-01, 2026-06
+    Initial Models     :2026-04, 2026-08
     
     section Product
-    Multi-greenhouse   :2025-05, 2025-08
-    Mobile App         :2025-07, 2025-10
-    Commercial Kit     :2025-10, 2025-12
+    Commercial Kit     :2026-09, 2027-03
+    Fleet Management   :2027-01, 2027-06
 ```
-
-## Contributing
-
-We welcome contributions! See our [Contributing Guide](../development/contributing.md) for details.
 
 ---
 

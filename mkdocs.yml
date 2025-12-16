@@ -34,6 +34,7 @@ nav:
   - Home: index.md
   - Getting Started:
     - Installation: getting-started/installation.md
+    - Tailscale Setup: getting-started/tailscale-setup.md
     - Configuration: getting-started/configuration.md
     - Quick Start: getting-started/quick-start.md
   - Architecture:
@@ -47,12 +48,19 @@ nav:
     - Sensors: components/sensors.md
   - API Reference: api/reference.md
   - Development:
-    - Contributing: development/contributing.md
+    - Code Standards: development/contributing.md
     - Local Setup: development/local-setup.md
     - CI/CD: development/ci-cd.md
   - Research:
     - Overview: research/overview.md
+    - DWC Components: research/dwc-components.md
     - References: research/references.md
+    - Articles & Insights:
+      - Overview: research/articles/index.md
+      - Growth Prediction: research/articles/growth-prediction.md
+      - Optimal Conditions: research/articles/optimal-conditions.md
+      - Computer Vision: research/articles/computer-vision.md
+      - Pulsed Light: research/articles/pulsed-light.md
   - Project Summaries:
     - Summary (English): summaries/project-summary-en.md
     - Summary (Português): summaries/project-summary-pt.md

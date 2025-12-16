@@ -6,45 +6,66 @@ GreenThumb uses a multi-repository, microservices architecture deployed on a Ras
 
 ```mermaid
 graph TB
-    subgraph "Raspberry Pi 5"
-        subgraph "Docker Compose"
+    subgraph RPI["Raspberry Pi 5"]
+        subgraph Docker["Docker Compose"]
             DC["data_collection"]
             API["fastapi (port 8080)"]
             DB[(PostgreSQL)]
             CRON["cron"]
         end
         
-        subgraph "Hardware"
+        subgraph HW["Hardware"]
             CAM[USB Camera]
             I2C[I2C Bus]
-            AHT[AHT10]
-            BMP[BMP280]
-            TSL[TSL2561]
+            SENSORS["Sensors<br/>(AHT10, BMP280, TSL2561)"]
         end
     end
     
-    subgraph "Shared Libraries"
-        CORE["greenthumb-core"]
-    end
+    CORE["greenthumb-core<br/>(shared library)"]
     
-    subgraph "Cloud (Future)"
+    subgraph Cloud["Cloud (Future)"]
         SUPA[(Supabase)]
         R2[Cloudflare R2]
     end
     
-    DC --> DB
+    %% Hardware connections
+    I2C --> SENSORS
     DC --> CAM
     DC --> I2C
-    I2C --> AHT
-    I2C --> BMP
-    I2C --> TSL
+    
+    %% Service connections
+    DC --> DB
     API --> DB
     CRON --> DB
-    CRON -.-> SUPA
-    CRON -.-> R2
+    
+    %% Library dependencies
     DC -.-> CORE
     API -.-> CORE
+    
+    %% Future cloud connections
+    CRON -.-> SUPA
+    CRON -.-> R2
 ```
+
+## Remote Access
+
+### Current Setup: Tailscale VPN
+
+The Raspberry Pi runs [Tailscale](https://tailscale.com) to provide:
+
+- **Always-on IP address** - Access the Pi from anywhere without port forwarding
+- **Secure development** - SSH and dashboard access from any location
+- **CI/CD integration** - Deploy updates remotely via GitHub Actions
+
+See [Tailscale Setup](../getting-started/tailscale-setup.md) for configuration details.
+
+### Future Vision
+
+For end users, we plan to enable remote greenhouse access without requiring VPN knowledge:
+
+- Client accesses their greenhouse via web dashboard
+- System handles secure connectivity transparently
+- No Tailscale or VPN configuration needed by the user
 
 ## Services
 
@@ -112,18 +133,19 @@ sequenceDiagram
 | ORM | SQLModel | Combines Pydantic + SQLAlchemy |
 | Containers | Docker | Easy deployment, reproducibility |
 | CI/CD | GitHub Actions | Automatic builds on push |
+| Remote Access | Tailscale | Secure, easy VPN for development |
 
 ## Future Architecture
 
 ```mermaid
 graph LR
-    subgraph "Multiple Greenhouses"
+    subgraph Greenhouses["Multiple Greenhouses"]
         GH1[Greenhouse 1]
         GH2[Greenhouse 2]
         GH3[Greenhouse N]
     end
     
-    subgraph "Cloud"
+    subgraph Cloud["Cloud"]
         SUPA[(Supabase)]
         R2[Cloudflare R2]
         ML[ML Service]
@@ -138,3 +160,4 @@ graph LR
     SUPA --> ML
     R2 --> ML
 ```
+

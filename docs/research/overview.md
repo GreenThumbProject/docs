@@ -8,7 +8,7 @@ GreenThumb is developed as part of a PIBITI research project.
 
 **Institution**: Insper Instituto de Ensino e Pesquisa
 
-**Duration**: 12 months (2025)
+**Duration**: August 2025 - August 2026 (12 months)
 
 **Researcher**: Henrique Bucci R. Netto
 
@@ -31,18 +31,19 @@ Develop a low-cost automated hydroponic cultivation platform, equipped with sens
 
 ### Hardware
 
-- Mini-greenhouse with hydroponic system (NFT or DWC)
+- Mini-greenhouse with DWC (Deep Water Culture) hydroponic system
+- Air pumps and air stones for aeration
 - Environmental sensors (pH, EC, temperature, humidity)
 - Full-spectrum LEDs with PWM control
 - Water circulation pump
-- ESP32 or Raspberry Pi for control
+- Raspberry Pi 5 for control
 - Camera for computer vision
 
 ### Software
 
 - Python for data collection and analysis
 - OpenCV for computer vision
-- MQTT or direct API for IoT communication
+- Direct API for IoT communication
 - PostgreSQL for data storage
 
 ### Experimental Design

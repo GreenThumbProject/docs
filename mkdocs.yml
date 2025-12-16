@@ -1,0 +1,91 @@
+site_name: GreenThumb Documentation
+site_url: https://greenthumbproject.github.io/docs
+repo_url: https://github.com/GreenThumbProject/docs
+repo_name: GreenThumbProject/docs
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+    - Quick Start: getting-started/quick-start.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Repositories: architecture/repositories.md
+    - Diagrams: architecture/diagrams.md
+  - Components:
+    - Raspberry Pi 5: components/rasp5.md
+    - Core Library: components/greenthumb-core.md
+    - Database: components/database.md
+    - Sensors: components/sensors.md
+  - API Reference: api/reference.md
+  - Development:
+    - Contributing: development/contributing.md
+    - Local Setup: development/local-setup.md
+    - CI/CD: development/ci-cd.md
+  - Research:
+    - Overview: research/overview.md
+    - References: research/references.md
+  - Project Summaries:
+    - Summary (English): summaries/project-summary-en.md
+    - Summary (Português): summaries/project-summary-pt.md
+    - Future Work (English): summaries/future-work-en.md
+    - Future Work (Português): summaries/future-work-pt.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.mark
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/GreenThumbProject

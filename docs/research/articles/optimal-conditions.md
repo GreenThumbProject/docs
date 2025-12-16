@@ -2,6 +2,8 @@
 
 Using machine learning to find optimal nutrient and environmental conditions for plant growth.
 
+> **Primary Reference**: Paper [1] - "Nutrient optimization for plant growth in Aquaponic irrigation using Machine Learning for small training datasets"
+
 ## Research Question
 
 > "What are the optimal conditions for this plant species?"
@@ -9,13 +11,14 @@ Using machine learning to find optimal nutrient and environmental conditions for
 **Input**: Environmental data + plant images  
 **Output**: Optimized values for nutrients and environment
 
-## Key Findings
+## Key Findings — Paper [1]
 
 ### Nutrient Optimization in Aquaponics
 
 Research on nutrient optimization showed remarkable results:
 
 **Cost Reduction**:
+
 - Feature selection reduced 20 chemical parameters to 5 key nutrients
 - ~75% reduction in nutrient monitoring costs
 
@@ -53,4 +56,4 @@ In a controlled DWC environment, these optimizations could be even more effectiv
 
 ## References
 
-- [1] Nutrient optimization for plant growth in Aquaponic irrigation using Machine Learning for small training datasets ([DOI](https://doi.org/10.1016/j.aiia.2022.05.001))
+- **[1]** Nutrient optimization for plant growth in Aquaponic irrigation using Machine Learning for small training datasets ([DOI](https://doi.org/10.1016/j.aiia.2022.05.001))

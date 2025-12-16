@@ -2,6 +2,8 @@
 
 Predicting plant growth time using environmental data and computer vision.
 
+> **Primary Reference**: Paper [3] - "A knowledge-and-data-driven modeling approach for simulating plant growth: A case study on tomato growth"
+
 ## Research Question
 
 > "How long will the plant take to grow or develop fruits?"
@@ -11,7 +13,7 @@ Predicting plant growth time using environmental data and computer vision.
 
 ## Key Approaches
 
-### Knowledge-and-Data-Driven Model (KDDM)
+### Knowledge-and-Data-Driven Model (KDDM) — Paper [3]
 
 A hybrid approach combining domain knowledge with data-driven learning.
 
@@ -28,7 +30,7 @@ A hybrid approach combining domain knowledge with data-driven learning.
 - Model can predict organ dry weights even when individual organ data is unavailable
 - Performs better than pure mechanism-based models like GreenLab
 
-### Visual Growth Prediction
+### Visual Growth Prediction — Paper [5]
 
 Predict future plant appearance based on current conditions.
 
@@ -36,11 +38,12 @@ Predict future plant appearance based on current conditions.
 **Output**: Predicted plant image after X days
 
 This enables:
+
 - Growth timeline visualization
 - Early detection of growth problems
 - Harvest time optimization
 
-## Dry Weight Prediction
+## Dry Weight Prediction — Paper [3]
 
 Predict total plant dry weight from environmental factors.
 
@@ -51,6 +54,7 @@ Predict total plant dry weight from environmental factors.
 - Resource optimization
 
 The KDDM approach showed high accuracy for predicting dry weights of:
+
 - Leaves (including petioles)
 - Stems
 - Fruits
@@ -67,5 +71,5 @@ The KDDM approach showed high accuracy for predicting dry weights of:
 
 ## References
 
-- [3] A knowledge-and-data-driven modeling approach for simulating plant growth: A case study on tomato growth ([DOI](https://dx.doi.org/10.1016/j.ecolmodel.2015.06.006))
-- [5] Plant Growth Prediction through Intelligent Embedded Sensing ([DOI](https://doi.org/10.1109/ISIE45063.2020.9152399))
+- **[3]** A knowledge-and-data-driven modeling approach for simulating plant growth: A case study on tomato growth ([DOI](https://dx.doi.org/10.1016/j.ecolmodel.2015.06.006))
+- **[5]** Plant Growth Prediction through Intelligent Embedded Sensing ([DOI](https://doi.org/10.1109/ISIE45063.2020.9152399))

@@ -170,27 +170,32 @@ INSERT INTO sensor_capability (id_sensor_model, id_variable) VALUES
 
 ### 3. Create Sensor Class
 
-Create a Python class in `greenthumb-core` that extends the `Sensor` base class:
+Create a Python class in `greenthumb-core` that extends the `Sensor` base class and register it:
 
 ```python
-from greenthumb_core.rpi5 import Sensor
+from dataclasses import dataclass
+from greenthumb_core.rpi5.sensor import Sensor, register_sensor
 
+@register_sensor("NewSensorModel")  # Name must match database model_name
+@dataclass
 class NewSensorModel(Sensor):
     """Driver for NewSensorModel sensor."""
     
-    def __init__(self, address: int = 0x00):
-        super().__init__()
-        self.address = address
+    def init(self, session):
+        """Initialize sensor hardware and capabilities."""
+        # Initialize sensor-specific hardware
+        self.obj = some_library.SensorDriver(self.i2c, address=self.address)
+        return super().init(session)
     
-    def read(self) -> tuple:
-        """Read sensor values."""
-        # Implement sensor-specific reading logic
-        value = self._read_from_i2c()
-        return (value,)
+    def read_data(self) -> dict:
+        """Read sensor values and return as dict."""
+        return {
+            "measurement_name": self.obj.read_value(),
+        }
 ```
 
-!!! warning "Class Name Must Match Database"
-    The class name must **exactly** match the `model_name` in the `sensor_model` table. The system uses this name to dynamically instantiate the correct sensor class.
+!!! warning "Registration Required"
+    The `@register_sensor("NewSensorModel")` decorator is **required** to register the sensor in the `SENSOR_REGISTRY`. The name must **exactly** match the `model_name` in the `sensor_model` database table.
 
 ### 4. Restart Data Collection
 

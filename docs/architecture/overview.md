@@ -5,44 +5,41 @@ GreenThumb uses a multi-repository, microservices architecture deployed on a Ras
 ## System Diagram
 
 ```mermaid
-graph TB
-    subgraph RPI["Raspberry Pi 5"]
-        subgraph Docker["Docker Compose"]
-            DC["data_collection"]
-            API["fastapi (port 8080)"]
-            DB[(PostgreSQL)]
-            CRON["cron"]
-        end
-        
-        subgraph HW["Hardware"]
-            CAM[USB Camera]
-            I2C[I2C Bus]
-            SENSORS["Sensors<br/>(AHT10, BMP280, TSL2561)"]
-        end
+flowchart TB
+    subgraph RPI["🍓 Raspberry Pi 5"]
+        direction TB
+        DC["📊 data_collection"]
+        API["🌐 fastapi :8080"]
+        DB[("🗄️ PostgreSQL")]
+        CRON["⏰ cron"]
     end
     
-    CORE["greenthumb-core<br/>(shared library)"]
-    
-    subgraph Cloud["Cloud (Future)"]
-        SUPA[(Supabase)]
-        R2[Cloudflare R2]
+    subgraph HW["🔌 Hardware"]
+        CAM["📷 USB Camera"]
+        SENSORS["🌡️ Sensors<br/>AHT10 · BMP280 · TSL2561"]
     end
     
-    %% Hardware connections
-    I2C --> SENSORS
-    DC --> CAM
-    DC --> I2C
+    subgraph CLOUD["☁️ Cloud - Future"]
+        SUPA[("Supabase")]
+        R2["Cloudflare R2"]
+    end
     
-    %% Service connections
+    CORE["📦 greenthumb-core"]
+    
+    %% Hardware to Services
+    CAM --> DC
+    SENSORS --> DC
+    
+    %% Internal service connections
     DC --> DB
     API --> DB
     CRON --> DB
     
-    %% Library dependencies
-    DC -.-> CORE
-    API -.-> CORE
+    %% Library
+    CORE -.-> DC
+    CORE -.-> API
     
-    %% Future cloud connections
+    %% Future cloud
     CRON -.-> SUPA
     CRON -.-> R2
 ```

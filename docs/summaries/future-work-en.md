@@ -2,7 +2,7 @@
 
 This document outlines the planned features and improvements for the GreenThumb project.
 
-## Short-term (Next 3 Months)
+## Short-term (Current Phase)
 
 ### Physical Construction
 
@@ -80,13 +80,6 @@ This document outlines the planned features and improvements for the GreenThumb 
     - Test anomaly detection approaches
     - Validate optimal conditions patterns
 
-### Mobile Application
-
-- [ ] **React Native App**
-    - Real-time monitoring
-    - Push notifications
-    - Remote control
-
 ## Long-term (After PIBITI)
 
 ### Product Development
@@ -106,6 +99,13 @@ This document outlines the planned features and improvements for the GreenThumb 
 - [ ] **Multi-Greenhouse Support**
     - Monitor multiple greenhouses from single interface
     - Aggregate data visualization
+
+### Mobile Application
+
+- [ ] **React Native App**
+    - Real-time monitoring
+    - Push notifications
+    - Remote control
 
 ### Machine Learning
 
@@ -127,32 +127,31 @@ This document outlines the planned features and improvements for the GreenThumb 
     - Publish findings on growth optimization
     - Share insights from PIBITI data
 
-## Technology Roadmap
+## Project Timeline
 
 ```mermaid
 gantt
     title GreenThumb Development Timeline
     dateFormat YYYY-MM
     
-    section Construction
-    DWC Greenhouse     :2025-01, 2025-03
-    Cherry Tomato Start:2025-02, 2025-04
+    section Current (2025)
+    Software architecture    :done, 2025-06, 2025-12
+    Software development     :active, 2025-09, 2026-03
     
-    section Hardware
-    pH/EC Sensors      :2025-03, 2025-05
-    LED/Pump Control   :2025-04, 2025-06
+    section Short-term
+    Component acquisition    :2025-12, 2026-02
+    DWC construction        :2026-01, 2026-03
+    Cherry tomato start     :2026-02, 2026-04
+    pH/EC integration       :2026-03, 2026-05
     
-    section Data Collection
-    Sensor Monitoring  :2025-04, 2026-08
-    Image Collection   :2025-04, 2026-08
+    section PIBITI (Until Aug 2026)
+    Data collection         :2026-04, 2026-08
+    Dataset curation        :2026-06, 2026-08
     
-    section ML
-    Dataset Curation   :2026-01, 2026-06
-    Initial Models     :2026-04, 2026-08
-    
-    section Product
-    Commercial Kit     :2026-09, 2027-03
-    Fleet Management   :2027-01, 2027-06
+    section Post-PIBITI
+    ML models               :2026-09, 2027-03
+    Commercial product      :2027-01, 2027-06
+    Fleet management        :2027-03, 2027-09
 ```
 
 ---

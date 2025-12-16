@@ -2,7 +2,7 @@
 
 Este documento descreve os recursos e melhorias planejados para o projeto GreenThumb.
 
-## Curto Prazo (Próximos 3 Meses)
+## Curto Prazo (Fase Atual)
 
 ### Construção Física
 
@@ -80,13 +80,6 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
     - Testar abordagens de detecção de anomalias
     - Validar padrões de condições ótimas
 
-### Aplicativo Mobile
-
-- [ ] **App React Native**
-    - Monitoramento em tempo real
-    - Notificações push
-    - Controle remoto
-
 ## Longo Prazo (Após PIBITI)
 
 ### Desenvolvimento de Produto
@@ -106,6 +99,13 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
 - [ ] **Suporte a Múltiplas Estufas**
     - Monitorar múltiplas estufas em uma única interface
     - Visualização agregada de dados
+
+### Aplicativo Mobile
+
+- [ ] **App React Native**
+    - Monitoramento em tempo real
+    - Notificações push
+    - Controle remoto
 
 ### Machine Learning
 
@@ -127,32 +127,31 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
     - Publicar descobertas sobre otimização de crescimento
     - Compartilhar insights dos dados do PIBITI
 
-## Cronograma de Desenvolvimento
+## Cronograma do Projeto
 
 ```mermaid
 gantt
     title Cronograma de Desenvolvimento GreenThumb
     dateFormat YYYY-MM
     
-    section Construção
-    Estufa DWC         :2025-01, 2025-03
-    Início Tomate      :2025-02, 2025-04
+    section Atual (2025)
+    Arquitetura software    :done, 2025-06, 2025-12
+    Desenvolvimento         :active, 2025-09, 2026-03
     
-    section Hardware
-    Sensores pH/CE     :2025-03, 2025-05
-    Controle LED/Bomba :2025-04, 2025-06
+    section Curto Prazo
+    Aquisição componentes   :2025-12, 2026-02
+    Construção DWC          :2026-01, 2026-03
+    Início tomate cereja    :2026-02, 2026-04
+    Integração pH/CE        :2026-03, 2026-05
     
-    section Coleta de Dados
-    Monitoramento      :2025-04, 2026-08
-    Coleta de Imagens  :2025-04, 2026-08
+    section PIBITI (Até Ago 2026)
+    Coleta de dados         :2026-04, 2026-08
+    Curadoria dataset       :2026-06, 2026-08
     
-    section ML
-    Curadoria Dataset  :2026-01, 2026-06
-    Modelos Iniciais   :2026-04, 2026-08
-    
-    section Produto
-    Kit Comercial      :2026-09, 2027-03
-    Gerenc. Frota      :2027-01, 2027-06
+    section Pós-PIBITI
+    Modelos ML              :2026-09, 2027-03
+    Produto comercial       :2027-01, 2027-06
+    Gerenc. frota           :2027-03, 2027-09
 ```
 
 ---

@@ -2,7 +2,7 @@
 
 **An AI-powered automated greenhouse ecosystem for optimal plant growth.**
 
-![GreenThumb](assets/images/logo-placeholder.png){ align=right width=200 }
+<center><img src="assets/images/greenthumb-logo.png" alt="drawing" width="300"></center>
 
 ## What is GreenThumb?
 

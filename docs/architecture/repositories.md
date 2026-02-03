@@ -10,6 +10,7 @@ graph TB
     
     CORE[greenthumb-core]
     RASP5[rasp5]
+    CLIENT[microcontroller-api-client]
     DB[database]
     CRON[cron]
     DOCS[docs]
@@ -18,6 +19,7 @@ graph TB
     
     ORG --> CORE
     ORG --> RASP5
+    ORG --> CLIENT
     ORG --> DB
     ORG --> CRON
     ORG --> DOCS
@@ -25,6 +27,7 @@ graph TB
     ORG --> GITHUB
     
     CORE -->|imported by| RASP5
+    CORE -->|imported by| CLIENT
     CORE -->|imported by| CRON
     DB -->|schemas used by| RASP5
 ```
@@ -40,7 +43,8 @@ Shared library containing:
 - SQLModel database definitions
 - Database utilities (engine, session)
 - Raspberry Pi 5 hardware interfaces
-- Sensor drivers
+- Sensor and actuator drivers
+- CRUD router generation for FastAPI
 
 ```bash
 # Install in other projects
@@ -54,9 +58,19 @@ pip install git+https://${GH_PAT}@github.com/GreenThumbProject/greenthumb-core.g
 Main Raspberry Pi 5 deployment:
 
 - Docker Compose configuration
-- FastAPI service
-- Data collection service
+- Microcontroller API service (hardware control)
+- Database initialization scripts
 - Makefile commands
+
+### microcontroller-api-client
+
+**Private** | Controller Scripts
+
+HTTP-based client for greenhouse control:
+
+- `controller` script: Sense-Think-Act loop
+- Future: Additional control scripts
+- Future: ML agent implementations
 
 ### database
 
@@ -119,7 +133,7 @@ Organization-level files:
 |------------|---------|
 | `greenthumb-esp32` | ESP32 library (if modular) |
 | `cloud` | Supabase/Cloudflare integration |
-| `ml` | Machine learning models |
+| `ml` | Machine learning models and agents |
 
 ## Naming Convention
 
@@ -130,5 +144,6 @@ Examples:
 
 - ✅ `greenthumb-core` (Python package)
 - ✅ `rasp5` (deployment)
+- ✅ `microcontroller-api-client` (client scripts)
 - ✅ `database` (not an installable package)
 - ❌ `greenthumb-database` (not a package)

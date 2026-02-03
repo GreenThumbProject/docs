@@ -7,8 +7,8 @@ The `rasp5` repository contains all code for deploying GreenThumb on a Raspberry
 This is a Docker Compose deployment consisting of:
 
 - **PostgreSQL** - Local database
-- **FastAPI** - REST API and dashboard
-- **Data Collection** - Sensor readings and photos
+- **Microcontroller API** - REST API and hardware control
+- **Controller** - Sense-Think-Act loop client
 - **Watchtower** - Automatic updates
 
 ## Repository Structure
@@ -16,18 +16,19 @@ This is a Docker Compose deployment consisting of:
 ```
 rasp5/
 ├── .github/workflows/      # CI/CD pipelines
-├── data_collection/        # Sensor collection service
+├── microcontroller-api/    # API service (submodule)
+│   ├── Dockerfile
+│   ├── app.py
+│   ├── routes/
+│   └── requirements.txt
+├── microcontroller-api-client/  # Controller scripts (submodule)
 │   ├── Dockerfile
 │   ├── main.py
 │   └── requirements.txt
+├── greenthumb-core/        # Shared library (submodule)
 ├── db/                     # Database schemas
 │   ├── 01_schema.sql
 │   └── 02_seed.sql
-├── fastapi/                # API service
-│   ├── Dockerfile
-│   ├── app.py
-│   ├── static/
-│   └── requirements.txt
 ├── cron/                   # Scheduled tasks
 ├── compose.yaml            # Docker Compose config
 ├── Makefile                # Developer commands
@@ -47,23 +48,27 @@ PostgreSQL 17.6 with automatic schema initialization.
 
 ### API (`api`)
 
-FastAPI server with:
+Microcontroller API server with centralized device management:
 
 - REST endpoints for data access
+- Hardware control (sensors and actuators)
 - Live video streaming
 - Static file serving
+- Per-actuator locking for concurrent access
 
 - **Port**: 8080
 - **Docs**: `/docs` (Swagger), `/redoc`
 
-### Data Collection (`data_collection`)
+### Controller (`controller`)
 
-Background service that:
+HTTP-based client implementing Sense-Think-Act loop:
 
-- Reads sensors every 30 minutes
-- Captures photos every 4 hours
-- Stores data in PostgreSQL
-- Writes to log file
+- Fetches system state from API
+- Evaluates thresholds
+- Commands actuators
+- Sends heartbeat to prevent safety mode
+
+- **Control Interval**: 15 seconds (configurable)
 
 ### Watchtower
 
@@ -72,15 +77,41 @@ Automatically pulls and restarts updated containers from Docker Hub.
 - **Poll interval**: 5 minutes
 - **Cleanup**: Removes old images
 
-## Make Commands
+## Makefile Commands
+
+### Production (Pull Pre-built Images)
 
 ```bash
-make up        # Start all services
-make down      # Stop all services
-make logs      # View logs
-make rebuild   # Full rebuild
-make db-shell  # PostgreSQL shell
-make restart-api  # Restart specific service
+make up          # Start all services
+make down        # Stop all services
+make pull        # Pull latest images from Docker Hub
+```
+
+### Local Build (For Development)
+
+```bash
+make dev         # Quick build: api + controller
+make rebuild     # Rebuild api + controller (uses cache)
+make rebuild-all # Full rebuild with --no-cache
+```
+
+### Submodule Management
+
+```bash
+make update-greenthumb-core    # Update greenthumb-core submodule
+make update-microcontroller-api # Update API submodule
+make update-all                # Update all submodules
+```
+
+### Utilities
+
+```bash
+make logs        # Follow logs from all services
+make logs-api    # Follow API logs only
+make logs-ctrl   # Follow controller logs only
+make db-shell    # Open psql shell to database
+make clean       # Remove all containers, volumes, images (DANGER!)
+make restart-%   # Restart specific service (e.g., make restart-api)
 ```
 
 ## Hardware Access
@@ -91,11 +122,32 @@ The containers have direct access to:
 |--------|------|---------|
 | Camera | `/dev/video0` | USB camera |
 | I2C | `/dev/i2c-1` | Sensor bus |
-| GPIO | `/dev/gpiochip*` | Future actuators |
+| GPIO | `/dev/gpiochip*` | Actuator control |
+
+## Environment Variables
+
+### Required
+
+| Variable | Description |
+|----------|-------------|
+| `DB_PASSWORD` | PostgreSQL password |
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `GH_PAT` | GitHub PAT for private repos |
+
+### Optional
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DEVICE_ID` | 1 | Device ID in database |
+| `CONTROL_INTERVAL` | 15 | Controller loop interval (seconds) |
+| `PERSIST_INTERVAL` | 300 | Data persistence interval (seconds) |
+| `CAMERA_SRC` | /dev/video0 | Camera device path |
+| `CAMERA_WIDTH` | 1280 | Camera resolution width |
+| `CAMERA_HEIGHT` | 720 | Camera resolution height |
 
 ## Dependencies
 
-Both `api` and `data_collection` depend on `greenthumb-core`:
+Both `api` and `controller` depend on `greenthumb-core`:
 
 ```txt
 # requirements.txt

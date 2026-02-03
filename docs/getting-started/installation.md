@@ -30,6 +30,13 @@ Connect the following sensors to the I2C bus:
 | BMP280 | 0x76 | Pressure, Temperature |
 | TSL2561 | 0x39 | Light Intensity |
 
+### Connect Actuators (Optional)
+
+| Actuator | GPIO Pins | Purpose |
+|----------|-----------|---------|
+| RGB LED | 17, 27, 22 | Grow lighting |
+| Water Pump | 18 | Irrigation |
+
 ## Software Installation
 
 ### 1. Clone the Repository
@@ -37,6 +44,7 @@ Connect the following sensors to the I2C bus:
 ```bash
 git clone https://github.com/GreenThumbProject/rasp5.git
 cd rasp5
+git submodule update --init --recursive
 ```
 
 ### 2. Configure Environment
@@ -63,8 +71,8 @@ make up
 This starts all services:
 
 - PostgreSQL database
-- FastAPI server (port 8080)
-- Data collection service
+- Microcontroller API (port 8080)
+- Controller (Sense-Think-Act loop)
 - Watchtower (auto-updates)
 
 ### 4. Verify Installation
@@ -79,6 +87,20 @@ make logs
 # Access the dashboard
 curl http://localhost:8080
 ```
+
+## Makefile Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| `make up` | Start all services |
+| `make down` | Stop all services |
+| `make pull` | Pull latest images from Docker Hub |
+| `make logs` | Follow logs from all services |
+| `make logs-api` | Follow API logs only |
+| `make logs-ctrl` | Follow controller logs only |
+| `make db-shell` | Open PostgreSQL shell |
+| `make rebuild` | Rebuild api + controller |
+| `make clean` | Remove all (DANGER!) |
 
 ## Next Steps
 

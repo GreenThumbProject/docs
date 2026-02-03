@@ -18,18 +18,18 @@ graph TB
         TSL[TSL2561<br/>Light]
     end
     
-    subgraph "Peripherals"
+    subgraph "Actuators"
         CAM[USB Camera]
-        LED[LED Strip<br/>- Future -]
-        PUMP[Water Pump<br/>- Future -]
+        LED[RGB LED Strip]
+        PUMP[Water Pump]
     end
     
     GPIO --> AHT
     GPIO --> BMP
     GPIO --> TSL
     USB --> CAM
-    GPIO -.-> LED
-    GPIO -.-> PUMP
+    GPIO --> LED
+    GPIO --> PUMP
 ```
 
 ## Docker Services
@@ -38,8 +38,8 @@ graph TB
 graph LR
     subgraph "Docker Network"
         DB[(PostgreSQL<br/>:5432)]
-        API[FastAPI<br/>:8080]
-        DC[Data Collection]
+        API[microcontroller-api<br/>:8080]
+        CTRL[Controller]
         WT[Watchtower]
     end
     
@@ -48,12 +48,12 @@ graph LR
         USER[User Browser]
     end
     
-    DC --> DB
+    CTRL -->|HTTP| API
     API --> DB
     USER --> API
     DH --> WT
     WT --> API
-    WT --> DC
+    WT --> CTRL
 ```
 
 ## Database Schema
@@ -61,13 +61,16 @@ graph LR
 ```mermaid
 erDiagram
     DEVICE ||--o{ DEVICE_SENSOR : has
+    DEVICE ||--o{ DEVICE_ACTUATOR : has
     DEVICE ||--o{ CULTIVATION : hosts
     SENSOR_MODEL ||--o{ DEVICE_SENSOR : defines
     SENSOR_MODEL ||--o{ SENSOR_CAPABILITY : has
+    ACTUATOR_MODEL ||--o{ DEVICE_ACTUATOR : defines
     VARIABLE ||--o{ SENSOR_CAPABILITY : measured_by
     VARIABLE ||--o{ MEASUREMENT : records
     DEVICE_SENSOR ||--o{ MEASUREMENT : produces
     PLANT_SPECIES ||--o{ CULTIVATION : grows
+    CULTIVATION ||--o{ THRESHOLD : has
     UNIT ||--o{ VARIABLE : default_for
     
     DEVICE {
@@ -84,11 +87,25 @@ erDiagram
         string manufacturer
     }
     
+    ACTUATOR_MODEL {
+        int id_actuator_model PK
+        string model_name
+        string manufacturer
+    }
+    
     DEVICE_SENSOR {
         int id_device_sensor PK
         int id_device FK
         int id_sensor_model FK
         string port_address
+        boolean is_active
+    }
+    
+    DEVICE_ACTUATOR {
+        int id_device_actuator PK
+        int id_device FK
+        int id_actuator_model FK
+        json config
         boolean is_active
     }
     
@@ -105,6 +122,16 @@ erDiagram
         float value
         int id_device_sensor FK
         int id_variable FK
+    }
+    
+    THRESHOLD {
+        int id_threshold PK
+        int id_cultivation FK
+        int id_variable FK
+        float min_value
+        float max_value
+        float target_value
+        int id_actuator_action FK
     }
     
     PLANT_SPECIES {
@@ -136,8 +163,8 @@ graph LR
     end
     
     subgraph "Docker Hub"
-        API_IMG[greenthumb-api:latest]
-        DC_IMG[greenthumb-data-collection:latest]
+        API_IMG[microcontroller-api:latest]
+        CTRL_IMG[microcontroller-api-client:latest]
     end
     
     subgraph "Raspberry Pi"
@@ -148,35 +175,48 @@ graph LR
     DEV --> BUILD
     BUILD --> PUSH
     PUSH --> API_IMG
-    PUSH --> DC_IMG
+    PUSH --> CTRL_IMG
     API_IMG --> WT
-    DC_IMG --> WT
+    CTRL_IMG --> WT
     WT --> CONTAINERS
 ```
 
-## Data Collection Flow
+## Control Loop (Sense-Think-Act)
 
 ```mermaid
 sequenceDiagram
-    participant S as Sensors
-    participant DC as data_collection
+    participant CTRL as Controller
+    participant API as microcontroller-api
+    participant HW as Hardware
     participant DB as PostgreSQL
-    participant LOG as Log File
     
-    Note over DC: Every 30 minutes
-    DC->>S: Read AHT10
-    S-->>DC: Temperature, Humidity
-    DC->>S: Read BMP280
-    S-->>DC: Pressure, Temperature
-    DC->>S: Read TSL2561
-    S-->>DC: Light Intensity
-    DC->>DB: INSERT measurements
-    DC->>LOG: Append log entry
+    Note over CTRL: Every 15 seconds
     
-    Note over DC: Every 4 hours
-    DC->>S: Capture Photo
-    S-->>DC: Image data
-    DC->>LOG: Append photo entry
+    rect rgb(200, 230, 200)
+        Note over CTRL,API: SENSE
+        CTRL->>API: GET /state/
+        API->>HW: Read all sensors
+        HW-->>API: Sensor values
+        API->>DB: Load thresholds
+        DB-->>API: Threshold data
+        API-->>CTRL: SystemState
+    end
+    
+    rect rgb(200, 200, 230)
+        Note over CTRL: THINK
+        Note over CTRL: Compare values vs thresholds
+        Note over CTRL: Determine actions
+    end
+    
+    rect rgb(230, 200, 200)
+        Note over CTRL,HW: ACT
+        CTRL->>API: POST /actuators/{id}/command
+        API->>HW: Set actuator state
+        HW-->>API: OK
+        API-->>CTRL: OK
+    end
+    
+    CTRL->>API: POST /state/heartbeat
 ```
 
 ## Future: Cloud Integration

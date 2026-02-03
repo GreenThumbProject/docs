@@ -35,9 +35,26 @@ The camera feed is available at:
 http://<raspberry-pi-ip>:8080/video
 ```
 
-## 4. Check Sensor Data
+## 4. Check System State
 
-### Latest Readings
+### Get Current State (Sensors + Thresholds)
+
+```bash
+curl http://localhost:8080/state/
+```
+
+Response:
+
+```json
+{
+  "sensors": {...},
+  "thresholds": [...],
+  "safety_mode": false,
+  "timestamp": "2026-02-03T12:00:00"
+}
+```
+
+### Get Latest Sensor Data
 
 ```bash
 curl http://localhost:8080/data/latest
@@ -49,35 +66,39 @@ Response:
 {
   "device_id": 1,
   "data": {
-    "Temperature": {
-      "value": 25.3,
-      "unit": "°C",
-      "collected_at": "2025-12-16T02:30:00"
-    },
-    "Humidity": {
-      "value": 65.2,
-      "unit": "%",
-      "collected_at": "2025-12-16T02:30:00"
-    }
+    "Temperature": {"value": 25.3, "unit": "°C", "collected_at": "..."},
+    "Humidity": {"value": 65.2, "unit": "%", "collected_at": "..."}
   }
 }
 ```
 
-### Historical Data
+## 5. Control Actuators
+
+### Set RGB LED Color
 
 ```bash
-curl "http://localhost:8080/data?limit=100"
+curl -X POST "http://localhost:8080/state/actuators/1/command" \
+  -H "Content-Type: application/json" \
+  -d '{"r": 255, "g": 0, "b": 128}'
 ```
 
-## 5. Monitor Logs
+### Set Pump Duty Cycle
+
+```bash
+curl -X POST "http://localhost:8080/state/actuators/2/command" \
+  -H "Content-Type: application/json" \
+  -d '{"duty_cycle": 50}'
+```
+
+## 6. Monitor Logs
 
 ```bash
 # All services
 make logs
 
-# Specific service
-make logs-data_collection
-make logs-api
+# Specific services
+make logs-api    # API logs
+make logs-ctrl   # Controller logs
 ```
 
 ## Common Commands
@@ -86,8 +107,10 @@ make logs-api
 |---------|-------------|
 | `make up` | Start all services |
 | `make down` | Stop all services |
-| `make logs` | View logs |
-| `make rebuild` | Full rebuild |
+| `make logs` | View all logs |
+| `make logs-api` | View API logs |
+| `make logs-ctrl` | View controller logs |
+| `make rebuild` | Rebuild services |
 | `make db-shell` | PostgreSQL shell |
 
 ## Troubleshooting
@@ -99,7 +122,7 @@ make logs-api
 ls -la /dev/video0
 
 # Check container logs
-docker compose logs data_collection
+make logs-api
 ```
 
 ### Sensors Not Reading
@@ -112,6 +135,28 @@ i2cdetect -y 1
 # 0x38 - AHT10
 # 0x39 - TSL2561
 # 0x76 - BMP280
+```
+
+### Controller Not Connecting
+
+```bash
+# Check controller logs
+make logs-ctrl
+
+# Verify API is healthy
+curl http://localhost:8080/
+```
+
+### Safety Mode Activated
+
+If actuators turn off unexpectedly, the controller may have crashed:
+
+```bash
+# Check controller status
+docker compose ps controller
+
+# Restart controller
+make restart-controller
 ```
 
 ### Database Connection Issues
@@ -128,3 +173,4 @@ docker compose restart db
 
 - [Architecture Overview](../architecture/overview.md)
 - [API Reference](../api/reference.md)
+- [Actuators](../components/actuators.md)

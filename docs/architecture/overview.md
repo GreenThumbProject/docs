@@ -1,6 +1,6 @@
 # Architecture Overview
 
-GreenThumb uses a multi-repository, microservices architecture deployed on a Raspberry Pi 5.
+GreenThumb uses a multi-repository, microservices architecture deployed on a Raspberry Pi 5, designed for horizontal scalability across multiple cultivation nodes.
 
 ## System Diagram
 
@@ -8,8 +8,8 @@ GreenThumb uses a multi-repository, microservices architecture deployed on a Ras
 flowchart TB
     subgraph RPI["🍓 Raspberry Pi 5"]
         direction TB
-        DC["📊 data_collection"]
-        API["🌐 fastapi :8080"]
+        CTRL["🎮 controller"]
+        API["🌐 microcontroller-api :8080"]
         DB[("🗄️ PostgreSQL")]
         CRON["⏰ cron"]
     end
@@ -17,6 +17,7 @@ flowchart TB
     subgraph HW["🔌 Hardware"]
         CAM["📷 USB Camera"]
         SENSORS["🌡️ Sensors<br/>AHT10 · BMP280 · TSL2561"]
+        ACTUATORS["💡 Actuators<br/>RGB LED · Water Pump"]
     end
     
     subgraph CLOUD["☁️ Cloud - Future"]
@@ -26,17 +27,20 @@ flowchart TB
     
     CORE["📦 greenthumb-core"]
     
-    %% Hardware to Services
-    CAM --> DC
-    SENSORS --> DC
+    %% Controller to API
+    CTRL -->|HTTP /state| API
+    
+    %% API to Hardware
+    API --> CAM
+    API --> SENSORS
+    API --> ACTUATORS
     
     %% Internal service connections
-    DC --> DB
     API --> DB
     CRON --> DB
     
     %% Library
-    CORE -.-> DC
+    CORE -.-> CTRL
     CORE -.-> API
     
     %% Future cloud
@@ -66,31 +70,36 @@ For end users, we plan to enable remote greenhouse access without requiring VPN 
 
 ## Services
 
-### Data Collection
+### Microcontroller API
 
-The `data_collection` service runs continuously, collecting:
+The `microcontroller-api` service is the central hub that:
 
-- **Sensor data** every 30 minutes
-- **Photos** every 4 hours
+- Manages all hardware (sensors and actuators)
+- Provides REST API endpoints for data access
+- Serves live video streaming from the camera
+- Hosts the static dashboard
+- Implements per-actuator locking for concurrent access
 
-Data is stored in the local PostgreSQL database.
+### Controller
 
-### FastAPI
+The `controller` service (from `microcontroller-api-client` repo) implements the Sense-Think-Act loop:
 
-The `api` service provides:
+- **Sense**: Fetches system state from `/state/` endpoint
+- **Think**: Evaluates thresholds and determines actions
+- **Act**: Commands actuators via `/state/actuators/{id}/command`
+- **Heartbeat**: Signals liveness to prevent safety mode
 
-- REST API endpoints for data access
-- Live video streaming from the camera
-- Static dashboard
+This separation allows future replacement with ML agents.
 
 ### PostgreSQL
 
 Local database storing:
 
 - Device and sensor configurations
+- Actuator definitions and states
 - Plant species catalog
 - Measurement history
-- Cultivation records
+- Cultivation records and thresholds
 
 ### Cron (Optional)
 
@@ -104,21 +113,26 @@ Scheduled tasks for:
 
 ```mermaid
 sequenceDiagram
-    participant S as Sensors
-    participant DC as data_collection
+    participant CTRL as Controller
+    participant API as microcontroller-api
+    participant HW as Hardware
     participant DB as PostgreSQL
-    participant API as FastAPI
-    participant UI as Dashboard
     
-    loop Every 30 minutes
-        S->>DC: Read sensor values
-        DC->>DB: Store measurements
+    loop Every 15 seconds
+        CTRL->>API: GET /state/
+        API->>HW: Read sensors
+        HW-->>API: Sensor values
+        API->>DB: Load thresholds
+        DB-->>API: Threshold data
+        API-->>CTRL: {sensors, thresholds, safety_mode}
+        
+        Note over CTRL: Evaluate thresholds
+        
+        CTRL->>API: POST /state/actuators/{id}/command
+        API->>HW: Set actuator state
+        
+        CTRL->>API: POST /state/heartbeat
     end
-    
-    UI->>API: GET /data/latest
-    API->>DB: Query measurements
-    DB-->>API: Return data
-    API-->>UI: JSON response
 ```
 
 ## Technology Decisions
@@ -131,6 +145,7 @@ sequenceDiagram
 | Containers | Docker | Easy deployment, reproducibility |
 | CI/CD | GitHub Actions | Automatic builds on push |
 | Remote Access | Tailscale | Secure, easy VPN for development |
+| Architecture | API-as-Device-Manager | Centralized hardware control, future ML agent support |
 
 ## Future Architecture
 

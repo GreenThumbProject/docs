@@ -19,6 +19,25 @@ DOCKERHUB_USERNAME=your_username
 GH_PAT=ghp_xxxxxxxxxxxxx
 ```
 
+### Controller Variables
+
+```env
+# API connection
+API_BASE_URL=http://api:8080
+
+# Control loop timing
+CONTROL_INTERVAL=15      # Seconds between control cycles
+PERSIST_INTERVAL=300     # Seconds between data persistence
+```
+
+### Camera Variables
+
+```env
+CAMERA_SRC=/dev/video0
+CAMERA_WIDTH=1280
+CAMERA_HEIGHT=720
+```
+
 ### Optional Variables (Future)
 
 ```env
@@ -32,20 +51,19 @@ CLOUDFLARE_R2_ACCESS_KEY=your_access_key
 CLOUDFLARE_R2_SECRET_KEY=your_secret_key
 ```
 
-## Data Collection Intervals
+## Control Loop Configuration
 
-Data collection intervals are configured in `data_collection/main.py`:
+The controller loop timing is configured via environment variables:
 
-```python
-SENSOR_INTERVAL = 30 * 60      # Sensor readings: every 30 minutes
-PHOTO_INTERVAL = 4 * 60 * 60   # Photo capture: every 4 hours
-CHECK_INTERVAL = 60            # Check loop: every minute
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CONTROL_INTERVAL` | 15 | Seconds between Sense-Think-Act cycles |
+| `PERSIST_INTERVAL` | 300 | Seconds between data persistence (future) |
 
-To change intervals, modify these values and rebuild the container:
+To change intervals, update `.env` and restart:
 
 ```bash
-make rebuild
+make restart-controller
 ```
 
 ## Database Configuration
@@ -61,12 +79,25 @@ The database schema is automatically initialized on first run from:
 make db-shell
 ```
 
+## Threshold Configuration
+
+Thresholds are configured per cultivation in the database:
+
+```sql
+INSERT INTO threshold (id_cultivation, id_variable, min_value, max_value, target_value, id_actuator_action)
+VALUES
+    (1, 1, 20.0, 30.0, 25.0, 1),  -- Temperature: 20-30°C, target 25°C
+    (1, 2, 60.0, 80.0, 70.0, 2);  -- Humidity: 60-80%, target 70%
+```
+
+The controller evaluates these thresholds and triggers actuator actions.
+
 ## Docker Compose Profiles
 
 ### Default Services
 
 ```bash
-make up  # Starts: db, api, data_collection, watchtower
+make up  # Starts: db, api, controller, watchtower
 ```
 
 ### With Cron Jobs

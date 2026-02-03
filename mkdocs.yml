@@ -46,6 +46,8 @@ nav:
     - Core Library: components/greenthumb-core.md
     - Database: components/database.md
     - Sensors: components/sensors.md
+    - Actuators: components/actuators.md
+    - Controller Client: components/microcontroller-api-client.md
   - API Reference: api/reference.md
   - Development:
     - Code Standards: development/contributing.md

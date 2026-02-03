@@ -77,7 +77,7 @@ make down      # Stop services
 ### Run API Locally (without sensors)
 
 ```bash
-cd fastapi
+cd microcontroller-api
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -143,7 +143,7 @@ make up
 ```bash
 make logs
 # Or specific service
-docker compose logs -f data_collection
+docker compose logs -f controller
 ```
 
 ## IDE Setup

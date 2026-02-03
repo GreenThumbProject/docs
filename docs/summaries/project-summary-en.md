@@ -4,37 +4,40 @@ This document provides a comprehensive overview of the GreenThumb project.
 
 ## Vision
 
-GreenThumb aims to create an **AI-powered automated greenhouse ecosystem** that establishes optimal growing environments for any plant species, maximizing growth efficiency while minimizing resource consumption.
+GreenThumb aims to create a **scalable platform for controlled environment plant production** that enables massive data collection for ML-based crop optimization. Each cultivation unit acts as a modular node in a data collection cluster, generating standardized phenotypic datasets.
 
 ## Current Status
 
-### Research Phase (2025)
+### Research Phase (2025-2026)
 
-We are developing a **low-cost hydroponic platform** for cherry tomato cultivation as part of a 12-month PIBITI research project at the university.
+We are developing a **distributed system for controlled environment production** as part of a 12-month PIBITI research project, oriented toward data collection and horizontal scalability.
 
 **Key Objectives:**
 
-1. Build a mini-greenhouse with automated environmental control
-2. Implement continuous monitoring (pH, EC, temperature, humidity, light)
-3. Develop computer vision for plant growth analysis
-4. Validate the system through a complete cultivation cycle
+1. Consolidate a platform where cultivation units act as modular data collection nodes
+2. Enable total control of environmental variables
+3. Generate high volumes of standardized phenotypic data
+4. Establish foundation for future ML agent control
 
 ### Completed Work
 
 - ✅ Raspberry Pi 5 deployment with Docker Compose
+- ✅ CI/CD pipeline (GitHub Actions → Docker Hub → Watchtower)
 - ✅ I2C sensor integration (AHT10, BMP280, TSL2561)
 - ✅ PostgreSQL database for data storage
-- ✅ FastAPI REST API with live video streaming
-- ✅ GitHub Actions CI/CD pipeline
-- ✅ Automatic container updates via Watchtower
+- ✅ FastAPI REST API with centralized device management
+- ✅ Live video streaming
 - ✅ Shared library (`greenthumb-core`)
+- ✅ Controller client with Sense-Think-Act loop
+- ✅ Actuator system (RGB LED, water pump)
+- ✅ Safety mode and heartbeat mechanism
 
 ### In Progress
 
-- 🔄 Physical greenhouse construction
+- 🔄 Physical greenhouse prototype construction
 - 🔄 pH and EC sensor integration
-- 🔄 LED and pump PWM control
 - 🔄 Cloud sync (Supabase + Cloudflare R2)
+- 🔄 Computer vision for growth analysis
 
 ## Technology Stack
 
@@ -55,6 +58,11 @@ We are developing a **low-cost hydroponic platform** for cherry tomato cultivati
 - **TSL2561**: Light intensity
 - **USB Camera**: Plant photos for computer vision
 
+### Actuators
+
+- **RGB LED**: PWM-controlled lighting
+- **Water Pump**: PWM-controlled irrigation
+
 ### Planned
 
 - **Supabase**: Cloud PostgreSQL database
@@ -64,13 +72,13 @@ We are developing a **low-cost hydroponic platform** for cherry tomato cultivati
 
 ## System Architecture
 
-The system uses a microservices architecture:
+The system uses a microservices architecture with centralized device management:
 
 ```
 Raspberry Pi 5
 ├── PostgreSQL (database)
-├── FastAPI (API + dashboard)
-├── data_collection (sensor readings + photos)
+├── microcontroller-api (API + hardware control)
+├── controller (Sense-Think-Act loop client)
 ├── cron (scheduled tasks)
 └── watchtower (auto-updates)
 ```
@@ -83,6 +91,7 @@ All services run in Docker containers and share a common network.
 |------------|---------|
 | `greenthumb-core` | Shared Python library |
 | `rasp5` | Raspberry Pi 5 deployment |
+| `microcontroller-api-client` | Controller scripts |
 | `database` | Database schemas |
 | `cron` | Scheduled tasks |
 | `docs` | This documentation |
@@ -92,17 +101,18 @@ All services run in Docker containers and share a common network.
 
 The system collects:
 
-- **Sensor data** every 30 minutes
-- **Photos** every 4 hours
+- **Sensor data** via API on-demand
+- **Photos** for computer vision analysis
 
-Data is stored locally and will sync to cloud storage daily.
+Data is stored locally and will sync to cloud storage for ML training.
 
 ## Long-term Goals
 
-1. **Multiple Greenhouses**: Scale to manage multiple units
-2. **ML Optimization**: Use collected data to optimize growing conditions
-3. **Commercial Product**: Develop a reproducible, sellable greenhouse kit
-4. **Open Source**: Share knowledge and tools with the community
+1. **Multiple Greenhouses**: Scale to manage multiple cultivation nodes
+2. **ML Dataset Generation**: Produce robust phenotypic datasets for model training
+3. **ML Agent Control**: Replace manual control with trained agents
+4. **Commercial Product**: Develop a reproducible, sellable greenhouse kit
+5. **Open Source**: Share knowledge and tools with the community
 
 ## Contact
 
@@ -112,4 +122,4 @@ Data is stored locally and will sync to cloud storage daily.
 
 ---
 
-*Last updated: December 2025*
+*Last updated: February 2026*

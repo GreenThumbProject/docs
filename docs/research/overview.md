@@ -4,7 +4,7 @@ GreenThumb is developed as part of a PIBITI research project.
 
 ## Project Information
 
-**Title**: Automated Low-Cost Hydroponic Platform with Intelligent Environment Control and Plant Growth Analysis through IoT and Computer Vision
+**Title**: Scalable Controlled Environment Plant Production System for High-Fidelity Data Collection
 
 **Institution**: Insper Instituto de Ensino e Pesquisa
 
@@ -12,56 +12,69 @@ GreenThumb is developed as part of a PIBITI research project.
 
 **Researcher**: Henrique Bucci R. Netto
 
+## Abstract
+
+The development of machine learning models for crop optimization faces a fundamental challenge in the scarcity of standardized, high-quality phenotypic datasets. This work proposes the development of a distributed system for controlled environment plant production, shifting the focus from isolated physical infrastructure to an architecture oriented toward massive data collection and horizontal scalability.
+
+The main objective is to consolidate a platform where each cultivation unit acts as a modular node in a data collection cluster, enabling total control of environmental variables and the generation of high volumes of standardized data.
+
 ## Objectives
 
 ### General Objective
 
-Develop a low-cost automated hydroponic cultivation platform, equipped with sensors and actuators, and with a plant growth analysis system based on computer vision.
+Develop a distributed system for controlled environment plant production oriented toward massive data collection and horizontal scalability, establishing a foundation for ML-based crop optimization.
 
 ### Specific Objectives
 
-1. Design and construct a mini-hydroponic greenhouse for cherry tomato cultivation
-2. Implement continuous monitoring of environmental variables (pH, EC, temperature, humidity, illumination)
-3. Automate control of full-spectrum LEDs and nutrient circulation pump using PWM
-4. Integrate sensors and actuators with an IoT platform
-5. Develop a computer vision system for plant growth analysis and detection of visual anomalies
-6. Validate the platform's operation through controlled cultivation trials
+1. Consolidate a platform where each cultivation unit acts as a modular node in a data collection cluster
+2. Enable total control of environmental variables through sensor instrumentation and automation
+3. Generate high volumes of standardized phenotypic data for ML model training
+4. Implement container orchestration ensuring software environment parity across nodes
+5. Develop a computer vision system for continuous plant monitoring
+6. Validate the platform through a physical prototype at the end of the project
 
 ## Methodology
 
+### Software Architecture
+
+- **Microservices orchestration** via containers on single-board computers
+- **Software environment parity** across nodes for consistent data collection
+- **CI/CD pipeline** for continuous integration and deployment
+- **PostgreSQL database** for structured data storage
+- **RESTful API** with centralized device management pattern
+
 ### Hardware
 
-- Mini-greenhouse with DWC (Deep Water Culture) hydroponic system
-- Air pumps and air stones for aeration
-- Environmental sensors (pH, EC, temperature, humidity)
-- Full-spectrum LEDs with PWM control
-- Water circulation pump
-- Raspberry Pi 5 for control
-- Camera for computer vision
-
-### Software
-
-- Python for data collection and analysis
-- OpenCV for computer vision
-- Direct API for IoT communication
-- PostgreSQL for data storage
+- Raspberry Pi 5 for control and data processing
+- Environmental sensors (temperature, humidity, pressure, light)
+- USB camera for computer vision
+- Actuators (LEDs, water pumps) with PWM control
+- Mini-greenhouse prototype for validation
 
 ### Experimental Design
 
-1. **Months 1-2**: Literature review and requirements gathering
-2. **Months 3-4**: Greenhouse and hydroponic system construction
-3. **Month 5**: Sensor and actuator integration
-4. **Month 6**: IoT platform development
-5. **Month 7**: Computer vision implementation
-6. **Months 8-9**: Integration tests and algorithm adjustments
-7. **Months 10-11**: Experimental cultivation and validation
-8. **Month 12**: Results consolidation and final report
+1. **Months 1-4**: Software architecture development and CI/CD pipeline
+2. **Months 5-6**: Sensor integration and automation validation
+3. **Month 7**: Computer vision implementation
+4. **Months 8-9**: Database structuring and horizontal expansion
+5. **Months 10-11**: Prototype construction and system validation
+6. **Month 12**: Results consolidation and final report
+
+## Partial Results
+
+- ✅ Software architecture with CI/CD pipeline (GitHub Actions + Docker Hub + Watchtower)
+- ✅ Validation of automation and remote access prototype
+- ✅ Database structuring for horizontal expansion
+- ✅ Centralized API-as-Device-Manager pattern implementation
+- ✅ Controller client with Sense-Think-Act loop
+- ✅ Actuator system (RGB LED, water pump)
 
 ## Expected Outcomes
 
-- Functional automated greenhouse prototype
-- Dataset of plant growth under controlled conditions
-- Computer vision algorithms for growth analysis
+- Robust datasets for training computer vision and growth prediction models
+- Platform enabling horizontal expansion for data collection clusters
+- Foundation for future ML agent replacement of manual control
+- Physical prototype validating the system operation
 - Technical documentation for replication
 - Research paper for publication
 

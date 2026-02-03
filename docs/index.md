@@ -1,17 +1,17 @@
 # GreenThumb Project
 
-**An AI-powered automated greenhouse ecosystem for optimal plant growth.**
+**A scalable platform for controlled environment plant production and high-fidelity data collection.**
 
 <center><img src="assets/images/greenthumb-logo.png" alt="drawing" width="300"></center>
 
 ## What is GreenThumb?
 
-GreenThumb is an open-source automated greenhouse project that combines IoT sensors, computer vision, and machine learning to create optimal growing environments for plants.
+GreenThumb is a distributed system for controlled environment plant production, designed with a focus on **massive data collection and horizontal scalability**. Each cultivation unit acts as a modular node in a data collection cluster, enabling total control of environmental variables and generation of high volumes of standardized phenotypic data.
 
 ## Current Phase
 
 !!! info "Research Phase"
-    We are currently developing a **low-cost hydroponic platform** for cherry tomato cultivation as part of a 12-month research project (PIBITI).
+    We are developing a **scalable controlled environment plant production system** as part of a 12-month research project (PIBITI), with the goal of establishing a foundation for ML-based crop optimization.
 
 ## Key Features
 
@@ -20,6 +20,7 @@ GreenThumb is an open-source automated greenhouse project that combines IoT sens
 - 🔄 **Automated Control** - PWM-controlled LEDs and water pumps
 - 📊 **Data Collection** - Continuous sensor data with cloud sync
 - 🐳 **Containerized** - Docker-based deployment on Raspberry Pi 5
+- 🔀 **Horizontal Scalability** - Modular nodes for data collection clusters
 
 ## Quick Links
 

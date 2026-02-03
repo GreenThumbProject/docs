@@ -1,6 +1,9 @@
 # Sensors
 
-GreenThumb uses I2C sensors connected to the Raspberry Pi 5.
+GreenThumb uses I2C sensors connected to the Raspberry Pi 5 for environmental monitoring.
+
+!!! tip "Looking for Actuators?"
+    For output devices like LEDs and pumps, see the [Actuators](actuators.md) page.
 
 ## Supported Sensors
 

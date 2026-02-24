@@ -114,7 +114,6 @@ Os dados são armazenados localmente e serão sincronizados com a nuvem para tre
 2. **Geração de Datasets para ML**: Produzir datasets fenotípicos robustos para treinamento de modelos
 3. **Controle por Agentes de ML**: Substituir controle manual por agentes treinados
 4. **Produto Comercial**: Desenvolver um kit de estufa reproduzível e vendável
-5. **Código Aberto**: Compartilhar conhecimento e ferramentas com a comunidade
 
 ## Contato
 

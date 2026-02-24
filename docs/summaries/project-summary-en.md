@@ -112,7 +112,6 @@ Data is stored locally and will sync to cloud storage for ML training.
 2. **ML Dataset Generation**: Produce robust phenotypic datasets for model training
 3. **ML Agent Control**: Replace manual control with trained agents
 4. **Commercial Product**: Develop a reproducible, sellable greenhouse kit
-5. **Open Source**: Share knowledge and tools with the community
 
 ## Contact
 

@@ -1,108 +1,154 @@
 # Installation
 
-This guide covers installing the GreenThumb system on a Raspberry Pi 5.
+GreenThumb can be deployed in two ways: using the **GreenthumbOS image** (recommended for production) or by installing manually on an existing Raspberry Pi OS.
 
-## Prerequisites
+## Option A — GreenthumbOS Image (Recommended)
 
-- Raspberry Pi 5 (4GB+ RAM recommended)
-- Raspberry Pi OS (64-bit)
-- Docker and Docker Compose installed
-- I2C enabled
-- USB camera connected
+!!! info "Planned for v1"
+    GreenthumbOS is a pre-configured Raspberry Pi OS image with Docker, all system packages, and pre-pulled Docker images baked in. See `rasp5/resources/greenthumbos-plan.md` for the full specification.
 
-## Hardware Setup
+1. Flash the GreenthumbOS image onto a ≥32 GB SD card using Balena Etcher or rpi-imager.
+2. Mount the boot partition. Edit `/boot/greenthumb.env`:
+   ```
+   DEVICE_ID=5
+   DEVICE_TOKEN=<token from cloud admin dashboard>
+   ```
+3. Edit `/boot/wpa_supplicant.conf` with your WiFi credentials (or use rpi-imager's Advanced Options).
+4. Insert SD card, power on Pi. Wait ~90 s for first-boot setup.
+5. SSH in and run:
+   ```bash
+   make up
+   ```
 
-### Enable I2C
+That's it. No further configuration is required for a standard single-camera, single-sensor setup.
+
+---
+
+## Option B — Manual Installation
+
+### Prerequisites
+
+- Raspberry Pi 5 (4 GB+ RAM recommended)
+- Raspberry Pi OS Lite 64-bit (Bookworm)
+- ≥32 GB SD card
+- Docker CE + Docker Compose plugin installed
+- I2C and Camera interfaces enabled
+
+### 1. Enable Hardware Interfaces
 
 ```bash
 sudo raspi-config
-# Navigate to: Interface Options > I2C > Enable
+# Interface Options → I2C → Enable
+# Interface Options → Camera → Enable
 sudo reboot
 ```
 
-### Connect Sensors
+Verify I2C:
+```bash
+sudo i2cdetect -y 1
+# Should show sensor addresses (0x38 = AHT10, 0x76 = BMP280, 0x39 = TSL2561)
+```
 
-Connect the following sensors to the I2C bus:
+### 2. Connect Hardware
 
-| Sensor | Address | Measurements |
-|--------|---------|--------------|
+#### Sensors (I2C bus)
+
+| Sensor | I2C Address | Measurements |
+|--------|------------|--------------|
 | AHT10 | 0x38 | Temperature, Humidity |
 | BMP280 | 0x76 | Pressure, Temperature |
 | TSL2561 | 0x39 | Light Intensity |
 
-### Connect Actuators (Optional)
+#### Actuators (GPIO)
 
 | Actuator | GPIO Pins | Purpose |
 |----------|-----------|---------|
-| RGB LED | 17, 27, 22 | Grow lighting |
+| RGB LED | 17, 27, 22 (R, G, B) | Grow lighting |
 | Water Pump | 18 | Irrigation |
 
-## Software Installation
+#### Camera
 
-### 1. Clone the Repository
+Connect a USB camera to any USB port (appears as `/dev/video0`).
+
+### 3. Install Docker
 
 ```bash
-git clone https://github.com/GreenThumbProject/rasp5.git
-cd rasp5
-git submodule update --init --recursive
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
-### 2. Configure Environment
+### 4. Clone the Repository
+
+```bash
+git clone https://github.com/henriquebrnetto/rasp5.git /opt/greenthumb
+cd /opt/greenthumb
+```
+
+### 5. Configure Environment
 
 ```bash
 cp .env.example .env
-nano .env  # Edit with your values
+nano .env
 ```
 
-Required environment variables:
+Minimum required variables:
 
-| Variable | Description |
-|----------|-------------|
-| `DB_PASSWORD` | PostgreSQL password |
-| `DOCKERHUB_USERNAME` | Your Docker Hub username |
-| `GH_PAT` | GitHub PAT for private repos |
+```env
+DEVICE_ID=1
+DEVICE_TOKEN=<token from cloud admin — see below>
+DB_PASSWORD=choose_a_strong_password
+```
 
-### 3. Start Services
+See [Configuration](configuration.md) for all variables.
+
+### 6. Provision the Device in the Cloud
+
+Before the Pi can sync, you must register it in the cloud admin dashboard:
+
+1. Log in to the cloud admin dashboard.
+2. Navigate to **Devices → New Device** — fill in name and location.
+3. Click **Rotate Token** next to the new device — copy the generated token.
+4. Paste it into `DEVICE_TOKEN` in the Pi's `.env`.
+
+### 7. Start Services
 
 ```bash
 make up
 ```
 
-This starts all services:
+This starts: `db`, `api`, `controller`, `local-dashboard`, `watchtower`.
 
-- PostgreSQL database
-- Microcontroller API (port 8080)
-- Controller (Sense-Think-Act loop)
-- Watchtower (auto-updates)
-
-### 4. Verify Installation
+### 8. Verify Installation
 
 ```bash
 # Check running containers
 docker compose ps
 
-# View logs
+# Follow logs
 make logs
 
-# Access the dashboard
-curl http://localhost:8080
+# Test API
+curl http://localhost:8080/state/
+
+# Open local dashboard
+# Navigate to http://<pi-ip> in your browser
 ```
 
-## Makefile Quick Reference
+## Cloud Deployment
 
-| Command | Description |
-|---------|-------------|
-| `make up` | Start all services |
-| `make down` | Stop all services |
-| `make pull` | Pull latest images from Docker Hub |
-| `make logs` | Follow logs from all services |
-| `make logs-api` | Follow API logs only |
-| `make logs-ctrl` | Follow controller logs only |
-| `make db-shell` | Open PostgreSQL shell |
-| `make rebuild` | Rebuild api + controller |
-| `make clean` | Remove all (DANGER!) |
+The cloud stack lives in `cloud/`. See [Local Setup](../development/local-setup.md) for development, or the `cloud/k8s/` directory for Kubernetes manifests.
+
+```bash
+cd cloud
+cp .env.example .env
+docker compose up --build
+# Admin dashboard: http://localhost:3000
+# API docs:        http://localhost:8000/docs
+```
 
 ## Next Steps
 
-- [Configuration](configuration.md) - Customize your setup
-- [Quick Start](quick-start.md) - Start collecting data
+- [Configuration](configuration.md) — Full environment variable reference
+- [Quick Start](quick-start.md) — Start collecting data
+- [Tailscale Setup](tailscale-setup.md) — Enable remote access

@@ -34,17 +34,18 @@ nav:
   - Home: index.md
   - Getting Started:
     - Installation: getting-started/installation.md
-    - Tailscale Setup: getting-started/tailscale-setup.md
     - Configuration: getting-started/configuration.md
     - Quick Start: getting-started/quick-start.md
+    - Tailscale Setup: getting-started/tailscale-setup.md
   - Architecture:
     - Overview: architecture/overview.md
     - Repositories: architecture/repositories.md
     - Diagrams: architecture/diagrams.md
   - Components:
     - Raspberry Pi 5: components/rasp5.md
-    - Core Library: components/greenthumb-core.md
+    - Python Packages: components/greenthumb-core.md
     - Database: components/database.md
+    - Cloud Backend: components/cloud.md
     - Sensors: components/sensors.md
     - Actuators: components/actuators.md
     - Controller Client: components/microcontroller-api-client.md

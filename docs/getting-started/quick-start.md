@@ -9,30 +9,26 @@ Complete the [Installation](installation.md) guide first.
 ## 1. Start the System
 
 ```bash
-cd rasp5
+cd /opt/greenthumb   # or wherever you cloned rasp5
 make up
 ```
 
-## 2. Access the Dashboard
+## 2. Access the Local Dashboard
 
 Open your browser and navigate to:
 
 ```
-http://<raspberry-pi-ip>:8080
+http://<raspberry-pi-ip>
 ```
 
-Or from the Raspberry Pi itself:
-
-```
-http://localhost:8080
-```
+The local dashboard (React SPA) shows live sensor cards, sparkline charts, an MJPEG camera feed, threshold editor, and sync status.
 
 ## 3. View Live Video
 
-The camera feed is available at:
+The MJPEG stream is embedded in the dashboard. Direct URL:
 
 ```
-http://<raspberry-pi-ip>:8080/video
+http://<raspberry-pi-ip>:8080/video/stream
 ```
 
 ## 4. Check System State
@@ -110,8 +106,18 @@ make logs-ctrl   # Controller logs
 | `make logs` | View all logs |
 | `make logs-api` | View API logs |
 | `make logs-ctrl` | View controller logs |
-| `make rebuild` | Rebuild services |
+| `make update` | Pull latest images + restart |
+| `make status` | Container health + last sync times |
+| `make backup` | Dump local DB to `/data/backups/` |
 | `make db-shell` | PostgreSQL shell |
+
+## Trigger a Manual Cloud Sync
+
+```bash
+curl -X POST http://localhost:8080/settings/sync
+```
+
+Or click **Sync Now** in the local dashboard Settings page.
 
 ## Troubleshooting
 

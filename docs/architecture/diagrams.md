@@ -36,24 +36,27 @@ graph TB
 
 ```mermaid
 graph LR
-    subgraph "Docker Network"
-        DB[(PostgreSQL<br/>:5432)]
-        API[microcontroller-api<br/>:8080]
-        CTRL[Controller]
-        WT[Watchtower]
+    subgraph "Pi Docker Network"
+        DB[(PostgreSQL\n:5432)]
+        API[microcontroller-api\n:8080]
+        CTRL[controller]
+        DASH[local-dashboard\n:80]
+        WT[watchtower]
     end
-    
+
     subgraph "External"
         DH[Docker Hub]
-        USER[User Browser]
+        BROWSER[User Browser]
     end
-    
+
     CTRL -->|HTTP| API
+    DASH -->|HTTP proxy| API
     API --> DB
-    USER --> API
+    BROWSER --> DASH
+    BROWSER --> API
     DH --> WT
-    WT --> API
-    WT --> CTRL
+    WT -->|rolling restart| API
+    WT -->|rolling restart| CTRL
 ```
 
 ## Database Schema
@@ -210,7 +213,7 @@ sequenceDiagram
     
     rect rgb(230, 200, 200)
         Note over CTRL,HW: ACT
-        CTRL->>API: POST /actuators/{id}/command
+        CTRL->>API: POST /state/actuators/{id}/command
         API->>HW: Set actuator state
         HW-->>API: OK
         API-->>CTRL: OK
@@ -219,36 +222,45 @@ sequenceDiagram
     CTRL->>API: POST /state/heartbeat
 ```
 
-## Future: Cloud Integration
+## Cloud Integration
+
+Each Pi node syncs to a shared cloud backend over HTTPS. The cloud uses Supabase PostgreSQL for the fleet database and Supabase Storage for photos.
 
 ```mermaid
 graph TB
     subgraph "Greenhouse 1"
         RPI1[Raspberry Pi]
-        DB1[(Local DB)]
+        DB1[(Local PostgreSQL)]
     end
-    
+
     subgraph "Greenhouse 2"
         RPI2[Raspberry Pi]
-        DB2[(Local DB)]
+        DB2[(Local PostgreSQL)]
     end
-    
-    subgraph "Cloud Services"
-        SUPA[(Supabase<br/>PostgreSQL)]
-        R2[Cloudflare R2<br/>Image Storage]
+
+    subgraph "Cloud"
+        GW[Gateway :80]
+        GAPI[greenthumb-api :8000]
+        AUTH[auth-service :8081]
+        ACC[account-service :8082]
+        SUPDB[(Supabase PostgreSQL)]
+        SUPSTORAGE[Supabase Storage\nplant-photos]
     end
-    
-    subgraph "Analytics"
-        ML[ML Models]
-        DASH[Dashboard]
+
+    subgraph "Admin"
+        ADMINDASH[Admin Dashboard :5173]
     end
-    
-    RPI1 --> SUPA
-    RPI1 --> R2
-    RPI2 --> SUPA
-    RPI2 --> R2
-    SUPA --> ML
-    R2 --> ML
-    SUPA --> DASH
-    ML --> DASH
+
+    RPI1 -->|HTTPS sync| GW
+    RPI2 -->|HTTPS sync| GW
+    GW --> GAPI
+    GW --> AUTH
+    GW --> ACC
+    GAPI --> SUPDB
+    GAPI --> SUPSTORAGE
+    AUTH --> SUPDB
+    ACC --> SUPDB
+    ADMINDASH --> GW
 ```
+
+Sync is best-effort and offline-safe: the Pi queues unsynced rows locally and pushes them when connectivity is restored.

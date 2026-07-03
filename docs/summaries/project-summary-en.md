@@ -4,20 +4,20 @@ This document provides a comprehensive overview of the GreenThumb project.
 
 ## Vision
 
-GreenThumb aims to create a **scalable platform for controlled environment plant production** that enables massive data collection for ML-based crop optimization. Each cultivation unit acts as a modular node in a data collection cluster, generating standardized phenotypic datasets.
+GreenThumb is a **controlled-environment plant production system** that combines a Raspberry Pi controller, environmental sensors, automation, and a cloud backend to run greenhouses reliably and collect consistent cultivation data.
 
 ## Current Status
 
 ### Research Phase (2025-2026)
 
-We are developing a **distributed system for controlled environment production** as part of a 12-month PIBITI research project, oriented toward data collection and horizontal scalability.
+The system is being developed as part of a 12-month PIBITI undergraduate research project at Insper.
 
 **Key Objectives:**
 
-1. Consolidate a platform where cultivation units act as modular data collection nodes
-2. Enable total control of environmental variables
-3. Generate high volumes of standardized phenotypic data
-4. Establish foundation for future ML agent control
+1. Build a reliable controlled-environment cultivation platform
+2. Enable control of environmental variables through sensors and automation
+3. Collect consistent, well-structured cultivation data
+4. Validate the system with a physical prototype
 
 ### Completed Work
 
@@ -108,10 +108,8 @@ Data is stored locally and will sync to cloud storage for ML training.
 
 ## Long-term Goals
 
-1. **Multiple Greenhouses**: Scale to manage multiple cultivation nodes
-2. **ML Dataset Generation**: Produce robust phenotypic datasets for model training
-3. **ML Agent Control**: Replace manual control with trained agents
-4. **Commercial Product**: Develop a reproducible, sellable greenhouse kit
+1. **Multiple Greenhouses**: Support managing more than one cultivation unit
+2. **Improved Automation**: Refine environmental control and monitoring
 
 ## Contact
 

@@ -390,7 +390,7 @@ All `/admin/**` routes require `Authorization: Bearer <jwt>` from a logged-in us
 |--------|------|-------------|
 | `GET` | `/admin/devices/` | List all devices |
 | `POST` | `/admin/devices/` | Register a new device |
-| `GET` | `/admin/devices/{id}` | Get device (includes `device_token` via `DeviceAdminRead`) |
+| `GET` | `/admin/devices/{id}` | Get device details |
 | `PUT` | `/admin/devices/{id}` | Update device |
 | `DELETE` | `/admin/devices/{id}` | Delete device |
 | `POST` | `/admin/devices/{id}/token` | Rotate `device_token` — returns new token once |

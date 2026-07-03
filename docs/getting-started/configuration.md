@@ -110,8 +110,7 @@ Thresholds are configured per `cultivation_phase` in the database. You can edit 
 | `DB_USER` | `postgres` | Cloud PostgreSQL user |
 | `DB_PASSWORD` | `password` | Cloud PostgreSQL password |
 | `DB_NAME` | `greenthumb` | Cloud database name |
-| `JWT_SECRET` | `change-me-in-production` | JWT signing secret (auth-service) |
-| `DEV_AUTH_BYPASS` | `false` | Set to `true` to skip JWT validation in local dev |
+| `JWT_SECRET` | `change-me-in-production` | JWT signing secret (auth-service) — set a strong unique value in production |
 
 ---
 
@@ -141,7 +140,4 @@ make up
 
 # Development (rebuild from source)
 docker compose up --build
-
-# Cloud development with auth bypass
-DEV_AUTH_BYPASS=true docker compose -f cloud/compose.yaml up --build
 ```

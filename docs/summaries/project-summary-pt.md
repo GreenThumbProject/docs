@@ -4,22 +4,20 @@ Este documento fornece uma visão geral completa do projeto GreenThumb.
 
 ## Visão
 
-O GreenThumb tem como objetivo criar uma **plataforma modular e escalável para agricultura em ambiente controlado**, possibilitando a coleta massiva de dados para otimização de cultivos baseada em aprendizado de máquina. Cada unidade de cultivo atua como um nó modular de um cluster de coleta, gerando datasets fenotípicos padronizados.
+O GreenThumb é um **sistema de produção vegetal em ambiente controlado** que combina um controlador Raspberry Pi, sensores ambientais, automação e um backend em nuvem para operar estufas de forma confiável e coletar dados de cultivo consistentes.
 
 ## Status Atual
 
 ### Fase de Pesquisa (2025-2026)
 
-**Título**: Plataforma Modular e Escalável de Agricultura em Ambiente Controlado para Coleta de Dados Fenotípicos
-
-**Resumo**: O desenvolvimento de modelos de aprendizado de máquina para otimização de cultivos enfrenta um desafio fundamental na escassez de datasets fenotípicos padronizados e de alta qualidade. Este trabalho propõe o desenvolvimento de um sistema distribuído para produção vegetal em ambiente controlado, deslocando o foco da infraestrutura física isolada para uma arquitetura orientada à coleta massiva de dados e à escalabilidade horizontal. O objetivo principal é consolidar uma plataforma onde cada unidade de cultivo atue como um nó modular de um cluster de coleta, possibilitando controle total das variáveis ambientais e a geração de alto volume de dados padronizados. A metodologia fundamenta-se na orquestração de microsserviços via contêineres em computadores de placa única, garantindo a paridade do ambiente de software entre nós, aliada à instrumentação com sensores de baixo custo, automação do controle ambiental e visão computacional para monitoramento contínuo. O sistema permite controle remoto inicialmente manual, estabelecendo a base para futura substituição por agentes de aprendizado de máquina. Até o final do projeto, será feito um protótipo físico para validar com o funcionamento do sistema.
+O sistema está sendo desenvolvido como parte de um projeto de iniciação científica PIBITI de 12 meses no Insper.
 
 **Objetivos Principais:**
 
-1. Consolidar uma plataforma onde unidades de cultivo atuem como nós modulares de coleta de dados
-2. Possibilitar controle total das variáveis ambientais
-3. Gerar alto volume de dados fenotípicos padronizados
-4. Estabelecer base para controle futuro por agentes de ML
+1. Construir uma plataforma confiável de cultivo em ambiente controlado
+2. Possibilitar o controle das variáveis ambientais por meio de sensores e automação
+3. Coletar dados de cultivo consistentes e bem estruturados
+4. Validar o sistema com um protótipo físico
 
 ### Trabalho Concluído
 
@@ -110,10 +108,8 @@ Os dados são armazenados localmente e serão sincronizados com a nuvem para tre
 
 ## Objetivos de Longo Prazo
 
-1. **Múltiplas Estufas**: Escalar para gerenciar múltiplos nós de cultivo
-2. **Geração de Datasets para ML**: Produzir datasets fenotípicos robustos para treinamento de modelos
-3. **Controle por Agentes de ML**: Substituir controle manual por agentes treinados
-4. **Produto Comercial**: Desenvolver um kit de estufa reproduzível e vendável
+1. **Múltiplas Estufas**: Suportar o gerenciamento de mais de uma unidade de cultivo
+2. **Automação Aprimorada**: Refinar o controle e o monitoramento ambiental
 
 ## Contato
 

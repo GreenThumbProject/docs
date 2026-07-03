@@ -82,14 +82,6 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
 
 ## Longo Prazo (Após PIBITI)
 
-### Desenvolvimento de Produto
-
-- [ ] **Produto Comercial**
-    - Criar kit de estufa vendável
-    - Componentes de hardware padronizados
-    - Instruções de montagem simplificadas
-    - Imagens de software pré-configuradas
-
 ### Gerenciamento de Frota
 
 - [ ] **Sistema de Registro de Dispositivos**
@@ -150,8 +142,6 @@ gantt
     
     section Pós-PIBITI
     Modelos ML              :2026-09, 2027-03
-    Produto comercial       :2027-01, 2027-06
-    Gerenc. frota           :2027-03, 2027-09
 ```
 
 ---

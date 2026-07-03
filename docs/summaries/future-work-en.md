@@ -82,14 +82,6 @@ This document outlines the planned features and improvements for the GreenThumb 
 
 ## Long-term (After PIBITI)
 
-### Product Development
-
-- [ ] **Commercial Product**
-    - Create a sellable greenhouse kit
-    - Standardized hardware components
-    - Easy assembly instructions
-    - Pre-configured software images
-
 ### Fleet Management
 
 - [ ] **Device Registration System**
@@ -150,8 +142,6 @@ gantt
     
     section Post-PIBITI
     ML models               :2026-09, 2027-03
-    Commercial product      :2027-01, 2027-06
-    Fleet management        :2027-03, 2027-09
 ```
 
 ---

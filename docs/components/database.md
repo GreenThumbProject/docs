@@ -1,13 +1,13 @@
 # Database
 
-GreenThumb uses **two separate PostgreSQL 17 instances**: one local to each Raspberry Pi node, and one shared cloud instance (Supabase). Both share the same table definitions (from `greenthumb-models`) but serve different purposes.
+GreenThumb uses **two separate PostgreSQL 17 instances**: one local to each Raspberry Pi node, and one shared cloud instance. Both share the same table definitions (from `greenthumb-models`) but serve different purposes.
 
 ## Two-Tier Database Architecture
 
 | Instance | Location | Port | Purpose |
 |----------|----------|------|---------|
 | **Pi-local** | `rasp5/` Docker Compose | 5432 (internal) | Real-time sensor readings, actuator state, photo metadata, local config |
-| **Cloud** | Supabase PostgreSQL | hosted | Fleet history, aggregated measurements, user accounts, device registry |
+| **Cloud** | Self-hosted PostgreSQL 17 + TimescaleDB | VM, reachable over the VPN | Fleet history, aggregated measurements, user accounts, device registry |
 
 The Pi does **not** depend on the cloud to operate. All sensor reading, threshold evaluation, and actuator control happens entirely against the local database. The cloud sync is best-effort — the Pi queues unsynced rows and pushes them whenever connectivity is available.
 
@@ -70,7 +70,7 @@ erDiagram
 
 | Table | Key columns | Description |
 |-------|-------------|-------------|
-| `device` | `id_device`, `name`, `mac_address`, `location`, `device_mode`, `id_user`, `device_token`, `created_at`, `updated_at` | Greenhouse Pi node; `device_token` is the Pi auth secret (cloud only: `last_seen_at`, `tailscale_ip`) |
+| `device` | `id_device`, `name`, `mac_address`, `location`, `device_mode`, `id_user`, `device_token`, `created_at`, `updated_at` | Greenhouse Pi node; `device_token` is the Pi auth secret (cloud only: `last_seen_at`, `device_ip`) |
 | `device_sensor` | `id_device_sensor`, `id_device`, `id_sensor_model`, `port_address`, `is_active`, `installed_at` | Sensor instances attached to a device (port_address = I2C address) |
 | `device_actuator` | `id_device_actuator`, `id_device`, `id_actuator_model`, `name`, `instance_config`, `is_active`, `installed_at` | Actuator instances; `instance_config` JSON holds GPIO pins, camera src, etc. |
 | `cultivation` | `id_cultivation`, `id_device`, `id_plant_species`, `start_date`, `end_date`, `notes`, `updated_at` | One grow run; `end_date=NULL` = currently active |
@@ -82,7 +82,7 @@ erDiagram
 |-------|-------------|-------------|
 | `measurement` | `id_measurement`, `id_device_sensor`, `id_variable`, `value`, `collected_at` | Individual sensor reading (Pi only: `is_synced`) |
 | `cultivation_phase` | `id_cultivation_phase`, `id_cultivation`, `id_growth_phase`, `started_at`, `ended_at`, `detected_by`, `notes` | Active growth phase; `ended_at=NULL` = current phase |
-| `photo` | `id_photo`, `id_device`, `id_device_actuator`, `id_cultivation`, `captured_at`, `file_path`, `cloud_url`, `file_size_bytes` | Photo metadata; `cloud_url` set after Supabase upload (Pi only: `is_synced`) |
+| `photo` | `id_photo`, `id_device`, `id_device_actuator`, `id_cultivation`, `captured_at`, `file_path`, `cloud_url`, `file_size_bytes` | Photo metadata; `cloud_url` set after the R2 upload (Pi only: `is_synced`) |
 | `actuator_log` | `id_log`, `id_device_actuator`, `action_at`, `action`, `payload`, `triggered_by` | Append-only actuator command audit trail |
 
 ### Pi-Only: Sync State
@@ -108,12 +108,12 @@ The `create_all()` call is idempotent — safe to run on re-deploy.
 
 ## Cloud Schema Migration
 
-When new columns are added to the cloud database (Supabase), migrations are kept in `database/schemas/cloud/`. Run them once in the Supabase SQL Editor:
+When new columns are added to the cloud database, migrations are kept in `database/schemas/cloud/`. Run them once against the cloud instance with `psql`:
 
 ```sql
 -- Example: database/schemas/cloud/03_phase6_migration.sql
 ALTER TABLE device ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
-ALTER TABLE device ADD COLUMN IF NOT EXISTS tailscale_ip VARCHAR;
+ALTER TABLE device ADD COLUMN IF NOT EXISTS device_ip VARCHAR;
 ```
 
 ## Accessing the Database
@@ -128,7 +128,7 @@ make db-shell       # opens psql inside the db container
 Two columns drive the sync state machine:
 
 - `measurement.is_synced` — set to `False` on insert (Pi), `True` after a successful `POST /sync/devices/{id}/measurements`
-- `photo.is_synced` — set to `False` when captured locally, `True` after Supabase upload + cloud metadata push
+- `photo.is_synced` — set to `False` when captured locally, `True` after the R2 upload + cloud metadata push
 
 The `sync_metadata` table stores wall-clock timestamps for observability:
 

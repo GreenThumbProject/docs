@@ -36,7 +36,7 @@ The system is being developed as part of a 12-month PIBITI undergraduate researc
 
 - 🔄 Physical greenhouse prototype construction
 - 🔄 pH and EC sensor integration
-- 🔄 Cloud sync (Supabase + Cloudflare R2)
+- 🔄 Cloud sync (self-hosted PostgreSQL + TimescaleDB, with Cloudflare R2 for images)
 - 🔄 Computer vision for growth analysis
 
 ## Technology Stack
@@ -65,7 +65,7 @@ The system is being developed as part of a 12-month PIBITI undergraduate researc
 
 ### Planned
 
-- **Supabase**: Cloud PostgreSQL database
+- **PostgreSQL 17 + TimescaleDB**: Self-hosted cloud database
 - **Cloudflare R2**: Image storage
 - **Computer Vision**: OpenCV for growth analysis
 - **Machine Learning**: Growth prediction models

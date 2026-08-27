@@ -47,11 +47,13 @@ If `CLOUD_API_URL` is not set, cloud sync and config pull are skipped and the Pi
 | `DB_NAME` | `greenthumb` | Database name |
 | `DATABASE_URL` | auto-built | Full SQLAlchemy URL (overrides individual DB_* vars) |
 
-### Tailscale (optional)
+### Remote access (WireGuard)
 
-| Variable | Description |
-|----------|-------------|
-| `TAILSCALE_AUTHKEY` | If set, `tailscale up --authkey` runs on first boot (GreenthumbOS only) |
+There is no environment variable for VPN enrolment, and that is deliberate. WireGuard has no auth key:
+a node joins by exchanging public keys with the hub, which is an administrative step on both ends rather
+than a secret baked into a boot file. See [Remote Access](vpn-setup.md).
+
+The old `TAILSCALE_AUTHKEY` variable is **retired** and is ignored if present.
 
 ---
 
@@ -71,8 +73,8 @@ WIFI_PASSWORD=secret
 # Cloud API
 CLOUD_API_URL=https://api.greenthumb.io
 
-# Tailscale (optional — enables remote SSH)
-TAILSCALE_AUTHKEY=tskey-auth-...
+# Remote access is configured separately, see the WireGuard guide.
+# There is no VPN variable here by design.
 
 # Hardware overrides (optional)
 CAMERA_SRC=/dev/video1

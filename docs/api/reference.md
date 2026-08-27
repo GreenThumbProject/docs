@@ -489,7 +489,7 @@ Bulk-insert measurements from the Pi. Skips malformed rows.
 
 #### `POST /sync/devices/{id}/photos`
 
-Receive a JPEG photo from the Pi, upload it to Supabase Storage, and store the metadata row. The Pi never holds Supabase credentials — the cloud API handles the upload.
+Receive a JPEG photo from the Pi, upload it to Cloudflare R2, and store the metadata row. The Pi never holds object-storage credentials — the cloud API handles the upload.
 
 **Content-Type:** `multipart/form-data`
 
@@ -505,10 +505,10 @@ Receive a JPEG photo from the Pi, upload it to Supabase Storage, and store the m
 
 **Response:**
 ```json
-{"id_photo": 42, "cloud_url": "https://xyz.supabase.co/storage/v1/object/public/plant-photos/1/...", "status": "stored"}
+{"id_photo": 42, "cloud_url": "https://<bucket>.r2.cloudflarestorage.com/plant-photos/1/...", "status": "stored"}
 ```
 
-`cloud_url` is `null` if Supabase credentials are not configured on the cloud side.
+`cloud_url` is `null` if object-storage credentials are not configured on the cloud side.
 
 ---
 

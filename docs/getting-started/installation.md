@@ -151,4 +151,4 @@ docker compose up --build
 
 - [Configuration](configuration.md) — Full environment variable reference
 - [Quick Start](quick-start.md) — Start collecting data
-- [Tailscale Setup](tailscale-setup.md) — Enable remote access
+- [Remote Access (WireGuard)](vpn-setup.md) — Reach the node from anywhere, without exposing it

@@ -224,7 +224,7 @@ sequenceDiagram
 
 ## Cloud Integration
 
-Each Pi node syncs to a shared cloud backend over HTTPS. The cloud uses Supabase PostgreSQL for the fleet database and Supabase Storage for photos.
+Each Pi node syncs to a shared cloud backend over HTTPS. The cloud runs a self-hosted PostgreSQL 17 + TimescaleDB instance for the fleet database, and Cloudflare R2 for photos.
 
 ```mermaid
 graph TB
@@ -243,8 +243,8 @@ graph TB
         GAPI[greenthumb-api :8000]
         AUTH[auth-service :8081]
         ACC[account-service :8082]
-        SUPDB[(Supabase PostgreSQL)]
-        SUPSTORAGE[Supabase Storage\nplant-photos]
+        SUPDB[(PostgreSQL 17 + TimescaleDB)]
+        SUPSTORAGE[Cloudflare R2\nplant-photos]
     end
 
     subgraph "Admin"

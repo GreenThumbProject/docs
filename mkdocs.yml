@@ -36,7 +36,7 @@ nav:
     - Installation: getting-started/installation.md
     - Configuration: getting-started/configuration.md
     - Quick Start: getting-started/quick-start.md
-    - Tailscale Setup: getting-started/tailscale-setup.md
+    - Remote Access (WireGuard): getting-started/vpn-setup.md
   - Architecture:
     - Overview: architecture/overview.md
     - Repositories: architecture/repositories.md

@@ -88,7 +88,7 @@ Database management:
 
 Cron jobs and scheduled tasks:
 
-- Cloud sync (Supabase)
+- Cloud sync
 - Image upload (Cloudflare R2)
 - Database cleanup
 
@@ -132,7 +132,7 @@ Organization-level files:
 | Repository | Purpose |
 |------------|---------|
 | `greenthumb-esp32` | ESP32 library (if modular) |
-| `cloud` | Supabase/Cloudflare integration |
+| `cloud` | Cloud API, database and object-storage integration |
 | `ml` | Machine learning models and agents |
 
 ## Naming Convention

@@ -36,7 +36,7 @@ O sistema está sendo desenvolvido como parte de um projeto de iniciação cient
 
 - 🔄 Construção do protótipo físico da estufa
 - 🔄 Integração de sensores de pH e CE
-- 🔄 Sincronização com nuvem (Supabase + Cloudflare R2)
+- 🔄 Sincronização com a nuvem (PostgreSQL + TimescaleDB próprio, com Cloudflare R2 para imagens)
 - 🔄 Visão computacional para análise de crescimento
 
 ## Stack Tecnológica
@@ -65,7 +65,7 @@ O sistema está sendo desenvolvido como parte de um projeto de iniciação cient
 
 ### Planejado
 
-- **Supabase**: Banco de dados PostgreSQL em nuvem
+- **PostgreSQL 17 + TimescaleDB**: Banco de dados próprio na nuvem
 - **Cloudflare R2**: Armazenamento de imagens
 - **Visão Computacional**: OpenCV para análise de crescimento
 - **Machine Learning**: Modelos de predição de crescimento

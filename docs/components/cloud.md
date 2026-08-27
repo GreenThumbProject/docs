@@ -54,7 +54,7 @@ FastAPI application with two router groups:
 - **`/admin`** — CRUD for all entities, JWT-protected (`Depends(get_current_user_id)`)
 - **`/sync`** — Pi ↔ Cloud sync endpoints, device-token-protected (`Depends(get_authenticated_device)`)
 
-Uses `pool_pre_ping=True` and `pool_recycle=240` on the SQLAlchemy engine to prevent stale-connection errors from Supabase's 5-minute idle timeout.
+Uses `pool_pre_ping=True` and `pool_recycle=240` on the SQLAlchemy engine so a connection idle behind the VPN is validated before reuse rather than failing mid-request.
 
 Shares `greenthumb-models` with the Pi API — the same SQLModel definitions drive both databases.
 
@@ -67,7 +67,7 @@ Java Spring Boot microservice:
 
 ### account-service (port 8082)
 
-Java Spring Boot microservice for user account CRUD. Backed by Supabase PostgreSQL.
+Java Spring Boot microservice for user account CRUD. Backed by the same self-hosted PostgreSQL instance as the rest of the cloud stack.
 
 ### admin-dashboard
 
@@ -76,7 +76,7 @@ React SPA (built with Vite + Tailwind + TanStack Query) served independently —
 | Page | Route | Description |
 |------|-------|-------------|
 | Login | `/login` | Email/password form → JWT stored in localStorage |
-| Devices | `/devices` | Register devices, view online status badge (`last_seen_at`), edit config, attach sensors/actuators, rotate tokens, open local dashboard via Tailscale IP |
+| Devices | `/devices` | Register devices, view online status badge (`last_seen_at`), edit config, attach sensors/actuators, rotate tokens, open local dashboard via WireGuard IP |
 | Species | `/species` | Plant species + growth phase editor |
 | Cultivations | `/cultivations` | Cultivation list + inline threshold CRUD |
 | Hardware | `/hardware` | Sensor model + actuator model catalog with create forms; read-only variables and units tables |
@@ -110,8 +110,8 @@ sequenceDiagram
     participant Pi as Pi SyncClient
     participant GW as Gateway
     participant API as greenthumb-api
-    participant DB as Supabase PostgreSQL
-    participant SUPA as Supabase Storage
+    participant DB as PostgreSQL 17 + TimescaleDB
+    participant SUPA as Cloudflare R2
 
     Pi->>GW: GET /sync/devices/1/config + Bearer device_token
     GW->>API: forward
@@ -144,7 +144,7 @@ sequenceDiagram
 ```bash
 cd cloud
 cp .env.example .env
-# Set DATABASE_URL, DB_URL, JWT_SECRET, SUPABASE_URL, SUPABASE_KEY
+# Set DATABASE_URL, DB_URL, JWT_SECRET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
 docker compose up --build
 ```
 

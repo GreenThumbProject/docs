@@ -31,7 +31,7 @@ greenthumb_models/
 ### Database Models (`models.py`)
 
 All tables are declared as `SQLModel` classes (acts as both ORM model and Pydantic schema).  
-Cloud-only fields (`last_seen_at`, `tailscale_ip` on `Device`) are conditionally added when `IS_CLOUD=1`.  
+Cloud-only fields (`last_seen_at`, `device_ip` on `Device`) are conditionally added when `IS_CLOUD=1`.  
 Pi-only fields (`is_dirty`, `is_synced`) are conditionally added when `IS_CLOUD` is unset.
 
 ```python
@@ -39,7 +39,7 @@ from greenthumb_models.models import (
     # Identity
     AppUser, AppUserRead,
     Device, DeviceCreate, DeviceRead, DeviceUpdate,
-    DeviceAdminRead,       # includes device_token, last_seen_at, tailscale_ip
+    DeviceAdminRead,       # includes device_token, last_seen_at, device_ip
     DeviceAdminUpdate,
 
     # Hardware catalog
@@ -93,7 +93,7 @@ erDiagram
 | `is_dirty` | `device`, `threshold` | Pi only (`IS_CLOUD` unset) |
 | `is_synced` | `measurement`, `photo` | Pi only |
 | `last_seen_at` | `device` | Cloud only (`IS_CLOUD=1`) |
-| `tailscale_ip` | `device` | Cloud only |
+| `device_ip` | `device` | Cloud only |
 
 ### Sync Schemas (`sync_schemas.py`)
 

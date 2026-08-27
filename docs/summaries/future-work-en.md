@@ -39,7 +39,7 @@ This document outlines the planned features and improvements for the GreenThumb 
 ### Software Development
 
 - [ ] **Cloud Database Sync**
-    - Daily sync to Supabase PostgreSQL
+    - Daily sync to the shared cloud PostgreSQL + TimescaleDB instance
     - Handle offline-first with eventual consistency
     
 - [ ] **Image Storage**

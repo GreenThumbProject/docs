@@ -39,7 +39,7 @@ Este documento descreve os recursos e melhorias planejados para o projeto GreenT
 ### Desenvolvimento de Software
 
 - [ ] **Sincronização com Banco de Dados na Nuvem**
-    - Sincronização diária com Supabase PostgreSQL
+    - Sincronização diária com a instância PostgreSQL + TimescaleDB na nuvem
     - Funcionamento offline-first com consistência eventual
     
 - [ ] **Armazenamento de Imagens**

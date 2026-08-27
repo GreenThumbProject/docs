@@ -27,7 +27,7 @@ flowchart TB
         FASTAPI["🐍 greenthumb-api :8000"]
         AUTH["🔐 auth-service :8081\n(Java / Spring Boot)"]
         ACCT["👤 account-service :8082\n(Java / Spring Boot)"]
-        SUPA["📦 Supabase\nPostgreSQL + Storage"]
+        SUPA["📦 PostgreSQL 17 + TimescaleDB\n(self-hosted) + R2"]
     end
 
     BROWSER["🖥️ Admin Browser\n(admin-dashboard SPA)"]
@@ -70,7 +70,7 @@ flowchart TB
 | Location | Database | Purpose |
 |----------|----------|---------|
 | **Pi-local** | PostgreSQL (inside Docker) | Real-time readings, actuator state, local thresholds, photo metadata |
-| **Cloud** | Supabase PostgreSQL | Fleet-wide history, aggregated measurements, user accounts, device registry |
+| **Cloud** | Self-hosted PostgreSQL 17 + TimescaleDB | Fleet-wide history, aggregated measurements, user accounts, device registry |
 
 Data flows **Pi → Cloud** on every sync cycle. Configuration flows **Cloud → Pi** on startup (with local DB as fallback).
 
@@ -154,7 +154,7 @@ sequenceDiagram
     participant SYNC as SyncClient
     participant GW as Gateway
     participant API as greenthumb-api (cloud)
-    participant SUPA as Supabase Storage
+    participant SUPA as Cloudflare R2
 
     loop Every SYNC_INTERVAL
         BG->>SYNC: sync measurements
@@ -165,10 +165,10 @@ sequenceDiagram
         GW-->>SYNC: 201 Created
 
         BG->>SYNC: sync photos
-        SYNC->>SUPA: PUT /storage/v1/object/plant-photos/{path}
-        SUPA-->>SYNC: public URL
+        SYNC->>SUPA: PUT plant-photos/{path}
+        SUPA-->>SYNC: object URL
         SYNC->>GW: POST /sync/devices/{id}/photos (multipart)
-        GW->>API: upload to Supabase, create Photo row
+        GW->>API: upload to R2, create Photo row
         API->>API: update last_seen_at
     end
 
@@ -189,12 +189,12 @@ sequenceDiagram
 | ORM | SQLModel | Combines Pydantic + SQLAlchemy; one model for DB + API |
 | Shared models | `greenthumb-models` package | Single source of truth for both Pi and cloud |
 | Cloud API | FastAPI (Python) | Fast async, auto OpenAPI, shares SQLModel models |
-| Cloud DB | Supabase PostgreSQL | Hosted, connection pooling, integrated Storage |
+| Cloud DB | Self-hosted PostgreSQL 17 + TimescaleDB | Full control of the data, hypertables for time-series, no vendor dependency |
 | Auth | Java Spring Boot (JWT) | Isolated, battle-tested JWT library (jjwt) |
 | Gateway | Spring Cloud Gateway | Declarative routing, integrates with Spring auth |
 | Frontends | React + Vite + Tailwind v3 + TanStack Query v5 | Modern, type-safe, reactive |
-| Photo storage | Supabase Storage | S3-compatible, free tier, no extra infra |
-| Remote access | Tailscale | Zero-config encrypted VPN, no public ports |
+| Photo storage | Cloudflare R2 | S3-compatible, no egress fees, private bucket |
+| Remote access | Self-hosted WireGuard | Encrypted hub-and-spoke VPN, no public ports, no third-party coordination server |
 | OTA (images) | Watchtower | Automatic Docker image updates |
 
 ## GreenthumbOS (Planned)

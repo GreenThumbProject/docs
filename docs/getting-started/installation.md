@@ -81,8 +81,8 @@ newgrp docker
 ### 4. Clone the Repository
 
 ```bash
-git clone https://github.com/henriquebrnetto/rasp5.git /opt/greenthumb
-cd /opt/greenthumb
+git clone https://github.com/henriquebrnetto/rasp5.git ~/Documents/greenthumb/rasp5
+cd ~/Documents/greenthumb/rasp5
 ```
 
 ### 5. Configure Environment

@@ -9,7 +9,7 @@ Complete the [Installation](installation.md) guide first.
 ## 1. Start the System
 
 ```bash
-cd /opt/greenthumb   # or wherever you cloned rasp5
+cd ~/Documents/greenthumb/rasp5   # or wherever you cloned rasp5
 make up
 ```
 

@@ -1,240 +1,94 @@
 # Sensors
 
-GreenThumb uses I2C sensors connected to the Raspberry Pi 5 for environmental monitoring.
+Sensors are drivers in the `greenthumb-rpi5` package. The node picks the driver for each wired part at runtime, from the `registry_key` of its catalog row (`component_model`).
+
+!!! note "v1 prototype"
+    The v1 prototype is a single bench rig. Not every supported component is fitted, and probes and dosing pumps must be calibrated before automatic dosing is used.
 
 !!! tip "Looking for Actuators?"
-    For output devices like LEDs and pumps, see the [Actuators](actuators.md) page.
+    For lights, fans and pumps, see the [Actuators](actuators.md) page.
 
 ## Supported Sensors
 
-| Sensor | Address | Measurements |
-|--------|---------|--------------|
-| AHT10 | 0x38 | Temperature, Humidity |
-| BMP280 | 0x76 | Pressure, Temperature |
-| TSL2561 | 0x39 | Light Intensity |
+| Component | Registry key | Interface | Measures |
+|-----------|--------------|-----------|----------|
+| TSL2561 | `TSL2561` | I2C | Light intensity, broadband, infrared |
+| BMP280 | `BMP280` | I2C | Temperature, pressure |
+| AHT10 | `AHT10` | I2C | Temperature, humidity |
+| DS18B20 | `DS18B20` | 1-Wire | Water temperature |
+| Float switch | `FLOAT_SWITCH` | GPIO | Reservoir level (on/off) |
+| pH probe | `PH_PROBE` | Analog, through an ADS1115 | pH (plus the raw probe voltage) |
+| TDS probe | `TDS_PROBE` | Analog, through an ADS1115 | Total dissolved solids, electrical conductivity (plus the raw probe voltage) |
+| USB webcam | `WEBCAM_REDRAGON_HITMAN` | USB | Photos (no measurements) |
 
-## Hardware Connection
+What each model measures is data: one `component_capability` row per variable in the catalog seed of the `database` repository.
 
-All sensors connect to the I2C1 bus:
+## Wiring Is Data
 
-| Pin | Function |
-|-----|----------|
-| Pin 3 | SDA (Data) |
-| Pin 5 | SCL (Clock) |
-| Pin 1 | 3.3V Power |
-| Pin 6 | Ground |
+How a part is wired to a node is a `device_component` row, not code: its `interface`, its `address` (I2C address, BCM pin or camera index), its parent component (an ADS1115 for the analog probes) and its `instance_config`. Rewiring a part means editing that row; the driver stays the same.
 
-```
-Raspberry Pi 5         Sensors
-    ┌─────┐           ┌─────────┐
-    │ 3.3V├───────────┤ VCC     │
-    │ GND ├───────────┤ GND     │
-    │ SDA ├───────────┤ SDA     │
-    │ SCL ├───────────┤ SCL     │
-    └─────┘           └─────────┘
-```
+## Calibration
 
-## Enable I2C
+The pH and TDS probes convert volts to a reading with the coefficients from their newest `calibration_log` row. An uncalibrated probe reports no value. The raw probe voltage is still recorded, so readings can be recomputed once a calibration exists.
+
+## Enable the Interfaces
+
+On the Pi (Linux):
 
 ```bash
 sudo raspi-config
 # Interface Options > I2C > Enable
+# Interface Options > 1-Wire > Enable (for the DS18B20)
 sudo reboot
 ```
 
-Verify sensors are detected:
+Check that the I2C sensors answer:
 
 ```bash
 i2cdetect -y 1
 ```
 
-Expected output:
+The `api` container is given `/dev/i2c-1`, `/dev/video0` and the GPIO chip and runs privileged (see `rasp5/compose.yaml`).
 
-```
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-00:                         -- -- -- -- -- -- -- -- 
-10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-30: -- -- -- -- -- -- -- -- 38 39 -- -- -- -- -- -- 
-40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-70: -- -- -- -- -- -- 76 --                         
-```
+## Adding a New Sensor
 
-## Sensor Details
+1. **Write the driver.** In `greenthumb_rpi5/sensor.py`, subclass `Sensor`, implement `_init_hardware` and `read_data`, and register it under a new key:
 
-### AHT10
+    ```python
+    from greenthumb_rpi5.component import Sensor, register_component
 
-**Address**: 0x38
+    @register_component("MY_KEY")
+    class MySensor(Sensor):
+        def _init_hardware(self):
+            # Open the hardware. Shared handles such as the I2C bus come from self.bus.
+            ...
 
-**Measurements**:
-- Temperature: -40°C to 85°C (±0.3°C accuracy)
-- Humidity: 0-100% RH (±2% accuracy)
+        def read_data(self, **_) -> dict:
+            # One key per capability: the variable name, lower case, spaces as underscores.
+            return {"temperature": ...}
+    ```
 
-**Usage**:
+2. **Add it to the catalog.** In the `database` repository, add a `component_model` row with `registry_key = 'MY_KEY'` and one `component_capability` row per variable it measures.
+3. **Wire it.** Add a `device_component` row for the node.
+4. **Restart the API.** On the Pi (Linux):
 
-```python
-from greenthumb_core.rpi5 import AHT10
-
-sensor = AHT10()
-temperature, humidity = sensor.read()
-print(f"Temperature: {temperature:.1f}°C")
-print(f"Humidity: {humidity:.1f}%")
-```
-
-### BMP280
-
-**Address**: 0x76
-
-**Measurements**:
-- Pressure: 300-1100 hPa (±1 hPa accuracy)
-- Temperature: -40°C to 85°C (±1°C accuracy)
-
-**Usage**:
-
-```python
-from greenthumb_core.rpi5 import BMP280
-
-sensor = BMP280()
-pressure, temperature = sensor.read()
-print(f"Pressure: {pressure:.1f} hPa")
-print(f"Temperature: {temperature:.1f}°C")
-```
-
-### TSL2561
-
-**Address**: 0x39
-
-**Measurements**:
-- Light: 0.1 to 40,000 lux
-
-**Usage**:
-
-```python
-from greenthumb_core.rpi5 import TSL2561
-
-sensor = TSL2561()
-lux = sensor.read()
-print(f"Light: {lux} lux")
-```
-
-## Database Configuration
-
-Sensors are registered in the database:
-
-```sql
--- Sensor models
-INSERT INTO sensor_model (model_name, manufacturer) VALUES
-    ('AHT10', 'Aosong'),
-    ('BMP280', 'Bosch'),
-    ('TSL2561', 'TAOS');
-
--- Sensor capabilities
-INSERT INTO sensor_capability (id_sensor_model, id_variable) VALUES
-    (1, 1), -- AHT10 -> Temperature
-    (1, 2), -- AHT10 -> Humidity
-    (2, 3), -- BMP280 -> Pressure
-    (2, 1), -- BMP280 -> Temperature
-    (3, 4); -- TSL2561 -> Light
-```
-
-## Planned Sensors
-
-| Sensor | Measurements | Status |
-|--------|--------------|--------|
-| pH Sensor | Solution pH | Planned |
-| EC Sensor | Electrical Conductivity | Planned |
-| CO2 Sensor | Carbon Dioxide | Future |
-| O2 Sensor | Oxygen | Future |
-
-## Adding New Sensors
-
-Adding a new sensor to the GreenThumb system requires three steps:
-
-### 1. Connect the Hardware
-
-Connect the sensor to the Raspberry Pi's I2C bus (SDA/SCL pins) or other appropriate interface.
-
-### 2. Register in Database
-
-Add the sensor model to the database:
-
-```sql
--- Register the sensor model
-INSERT INTO sensor_model (model_name, manufacturer) VALUES
-    ('NewSensorModel', 'Manufacturer');
-
--- Define what the sensor measures
-INSERT INTO sensor_capability (id_sensor_model, id_variable) VALUES
-    ((SELECT id_sensor_model FROM sensor_model WHERE model_name = 'NewSensorModel'),
-     (SELECT id_variable FROM variable WHERE name = 'your_variable'));
-```
-
-### 3. Create Sensor Class
-
-Create a Python class in `greenthumb-core` that extends the `Sensor` base class and register it:
-
-```python
-from dataclasses import dataclass
-from greenthumb_core.rpi5.sensor import Sensor, register_sensor
-
-@register_sensor("NewSensorModel")  # Name must match database model_name
-@dataclass
-class NewSensorModel(Sensor):
-    """Driver for NewSensorModel sensor."""
-    
-    def init(self, session):
-        """Initialize sensor hardware and capabilities."""
-        # Initialize sensor-specific hardware
-        self.obj = some_library.SensorDriver(self.i2c, address=self.address)
-        return super().init(session)
-    
-    def read_data(self) -> dict:
-        """Read sensor values and return as dict."""
-        return {
-            "measurement_name": self.obj.read_value(),
-        }
-```
-
-!!! warning "Registration Required"
-    The `@register_sensor("NewSensorModel")` decorator is **required** to register the sensor in the `SENSOR_REGISTRY`. The name must **exactly** match the `model_name` in the `sensor_model` database table.
-
-### 4. Restart Data Collection
-
-After adding the sensor, restart the data collection container:
-
-```bash
-docker compose restart data_collection
-```
-
-The system will automatically detect and start using the new sensor.
-
-!!! tip "Actuators (Coming Soon)"
-    The same pattern will be used for actuators, allowing easy addition of new output devices like pumps, LEDs, and valves.
+    ```bash
+    cd deploy && make restart-api
+    ```
 
 ## Troubleshooting
 
 ### Sensor Not Detected
 
-1. Check wiring connections
-2. Verify power (3.3V, not 5V!)
-3. Check I2C is enabled: `ls /dev/i2c*`
-4. Try different I2C address if sensor has options
+1. Check the wiring and power (3.3V, not 5V, for the I2C sensors).
+2. Check that I2C is enabled: `ls /dev/i2c*`.
+3. Check the `address` on the part's `device_component` row.
 
 ### Permission Denied
 
+On the Pi (Linux):
+
 ```bash
-# Add user to i2c group
 sudo usermod -aG i2c $USER
-# Re-login required
-```
-
-### In Docker
-
-Containers need device access:
-
-```yaml
-devices:
-  - "/dev/i2c-1:/dev/i2c-1"
+# Log out and back in
 ```

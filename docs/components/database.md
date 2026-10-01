@@ -1,152 +1,84 @@
 # Database
 
-GreenThumb uses **two separate PostgreSQL 17 instances**: one local to each Raspberry Pi node, and one shared cloud instance. Both share the same table definitions (from `greenthumb-models`) but serve different purposes.
+GreenThumb runs two kinds of PostgreSQL database: one local database on each Raspberry Pi node, and one cloud database for the whole fleet.
 
-## Two-Tier Database Architecture
+| Tier | Engine | Purpose |
+|------|--------|---------|
+| **Pi** | PostgreSQL 17, in the node's Compose stack | Readings, actuator and rule logs, cultivations and control rules, photo metadata, and a copy of the catalog the node needs |
+| **Cloud** | PostgreSQL 17 + TimescaleDB, self-hosted, reachable only over the VPN | Fleet history, users, device registry, the shared catalog |
 
-| Instance | Location | Port | Purpose |
-|----------|----------|------|---------|
-| **Pi-local** | `rasp5/` Docker Compose | 5432 (internal) | Real-time sensor readings, actuator state, photo metadata, local config |
-| **Cloud** | Self-hosted PostgreSQL 17 + TimescaleDB | VM, reachable over the VPN | Fleet history, aggregated measurements, user accounts, device registry |
+The Pi does not need the cloud to run. It works against its local database and syncs with the cloud whenever it can reach it.
 
-The Pi does **not** depend on the cloud to operate. All sensor reading, threshold evaluation, and actuator control happens entirely against the local database. The cloud sync is best-effort — the Pi queues unsynced rows and pushes them whenever connectivity is available.
+## Source of truth
 
-## Schema Overview
+The schema is defined in SQL in the `database` repository:
 
-All tables are defined as `SQLModel` classes in `rasp5/greenthumb-models/src/greenthumb_models/models.py` and automatically created by SQLAlchemy's `create_all()` on startup.
+| File | Contents |
+|------|----------|
+| `schemas/base/01_schema.sql` | Shared base: enums, every shared table, indexes, triggers. Both tiers run it first. |
+| `schemas/rasp/02_schema.sql` | Pi overlay: sync flags and the `sync_metadata` table |
+| `schemas/cloud/02_schema.sql` | Cloud overlay: user credentials and roles, fleet columns on `device`, TimescaleDB hypertables, `cloud_meta`, `system_alert` |
+| `schemas/cloud/02_seed.sql` | Catalog seed (cloud only) |
 
-```mermaid
-erDiagram
-    UNIT ||--o{ VARIABLE : "default unit"
-    VARIABLE ||--o{ SENSOR_CAPABILITY : "measured by"
-    VARIABLE ||--o{ MEASUREMENT : records
+`make schema-sync` copies these files into `rasp5/db/` and `cloud/db/`, which each Postgres container mounts into `/docker-entrypoint-initdb.d/`. Never edit those copies. On a Windows workstation, from `rasp5/` or `cloud/`:
 
-    APP_USER ||--o{ DEVICE : owns
-
-    DEVICE ||--o{ DEVICE_SENSOR : has
-    DEVICE ||--o{ DEVICE_ACTUATOR : has
-    DEVICE ||--o{ CULTIVATION : hosts
-
-    SENSOR_MODEL ||--o{ DEVICE_SENSOR : defines
-    SENSOR_MODEL ||--o{ SENSOR_CAPABILITY : has
-    ACTUATOR_MODEL ||--o{ DEVICE_ACTUATOR : defines
-
-    DEVICE_SENSOR ||--o{ MEASUREMENT : produces
-
-    PLANT_SPECIES ||--o{ CULTIVATION : grows
-    PLANT_SPECIES ||--o{ GROWTH_PHASE : templates
-
-    CULTIVATION ||--o{ CULTIVATION_PHASE : has
-    CULTIVATION ||--o{ THRESHOLD : scopes
-    CULTIVATION ||--o{ PHOTO : documents
-
-    GROWTH_PHASE ||--o{ CULTIVATION_PHASE : instantiates
-    GROWTH_PHASE ||--o{ THRESHOLD : scopes
-
-    DEVICE_ACTUATOR ||--o{ ACTUATOR_LOG : records
+```powershell
+cmd /c make schema-sync
 ```
 
-## Tables Reference
+The Pi gets no seed file: it fills its catalog from the cloud on the first sync.
 
-### Tier 0: Identity
+The Python models in `greenthumb.models` (see [Python Packages](greenthumb-models.md)) mirror the SQL. Their `create_all()` call at startup is only a safety net; the SQL files create the schema.
 
-| Table | Key columns | Description |
-|-------|-------------|-------------|
-| `app_user` | `id_user` (UUID), `name`, `email`, `created_at` | User accounts (source of truth in cloud) |
+## Tables
 
-### Tier 1: Global Catalog
+The shared base defines 25 tables, used by both tiers:
 
-| Table | Key columns | Description |
-|-------|-------------|-------------|
-| `unit` | `id_unit`, `symbol`, `name` | Measurement units: °C, %, hPa, lux |
-| `variable` | `id_variable`, `name`, `description`, `default_unit_id` | What is measured: Temperature, Humidity, Pressure, Light |
-| `plant_species` | `id_plant_species`, `name`, `scientific_name` | Plant catalog |
-| `growth_phase` | `id_growth_phase`, `id_plant_species`, `name`, `phase_order`, `is_default` | Reusable phase templates; `is_default=True` = "All Phases" sentinel |
-| `sensor_model` | `id_sensor_model`, `model_name`, `manufacturer` | Sensor hardware catalog: AHT10, BMP280, TSL2561 |
-| `actuator_model` | `id_actuator_model`, `model_name`, `actuator_type`, `manufacturer`, `model_config_json` | Actuator hardware catalog: RGBLED, WaterPump, Camera |
-| `sensor_capability` | `id_sensor_model`, `id_variable`, `precision`, `accuracy`, `min_range`, `max_range` | Which variables each sensor model can measure |
+`app_user`, `property`, `unit`, `variable`, `plant_species`, `growth_phase`, `species_rule`, `device_model`, `component_model`, `component_capability`, `component_model_effect`, `substance`, `substance_effect`, `device`, `container`, `device_component`, `calibration_log`, `cultivation`, `actuator_effect`, `control_rule`, `control_rule_log`, `measurement`, `cultivation_phase`, `photo`, `actuator_log`
 
-### Tier 2: Device Configuration
+| Tier | Extra tables | Total |
+|------|--------------|-------|
+| Pi | `sync_metadata` | 26 |
+| Cloud | `cloud_meta`, `system_alert` | 27 |
 
-| Table | Key columns | Description |
-|-------|-------------|-------------|
-| `device` | `id_device`, `name`, `mac_address`, `location`, `device_mode`, `id_user`, `device_token`, `created_at`, `updated_at` | Greenhouse Pi node; `device_token` is the Pi auth secret (cloud only: `last_seen_at`, `device_ip`) |
-| `device_sensor` | `id_device_sensor`, `id_device`, `id_sensor_model`, `port_address`, `is_active`, `installed_at` | Sensor instances attached to a device (port_address = I2C address) |
-| `device_actuator` | `id_device_actuator`, `id_device`, `id_actuator_model`, `name`, `instance_config`, `is_active`, `installed_at` | Actuator instances; `instance_config` JSON holds GPIO pins, camera src, etc. |
-| `cultivation` | `id_cultivation`, `id_device`, `id_plant_species`, `start_date`, `end_date`, `notes`, `updated_at` | One grow run; `end_date=NULL` = currently active |
-| `threshold` | `id_threshold`, `id_cultivation`, `id_variable`, `id_growth_phase`, `min_value`, `max_value`, `target_value`, `id_actuator_action`, `is_active`, `updated_at` | Sensor target range; `id_actuator_action=NULL` = monitoring-only (Pi only: `is_dirty`) |
+On the cloud, `measurement`, `actuator_log` and `control_rule_log` are TimescaleDB hypertables, and the `actuator_log_daily` continuous aggregate feeds the admin dashboard.
 
-### Tier 3: Operational Data
+## Sync state on the Pi
 
-| Table | Key columns | Description |
-|-------|-------------|-------------|
-| `measurement` | `id_measurement`, `id_device_sensor`, `id_variable`, `value`, `collected_at` | Individual sensor reading (Pi only: `is_synced`) |
-| `cultivation_phase` | `id_cultivation_phase`, `id_cultivation`, `id_growth_phase`, `started_at`, `ended_at`, `detected_by`, `notes` | Active growth phase; `ended_at=NULL` = current phase |
-| `photo` | `id_photo`, `id_device`, `id_device_actuator`, `id_cultivation`, `captured_at`, `file_path`, `cloud_url`, `file_size_bytes` | Photo metadata; `cloud_url` set after the R2 upload (Pi only: `is_synced`) |
-| `actuator_log` | `id_log`, `id_device_actuator`, `action_at`, `action`, `payload`, `triggered_by` | Append-only actuator command audit trail |
+The Pi overlay adds columns that track what still has to reach the cloud:
 
-### Pi-Only: Sync State
+| Column | Tables | Meaning |
+|--------|--------|---------|
+| `is_synced` | `measurement`, `photo`, `actuator_log`, `control_rule_log`, `calibration_log` | `FALSE` until the row has been pushed |
+| `is_dirty` | `device`, `cultivation`, `cultivation_phase`, `control_rule` | `TRUE` while a local edit has not been pushed |
+| `pending_init` | `device_component` | Added while the Pi was running; its hardware is set up only after a restart or rescan |
 
-| Table | Key columns | Description |
-|-------|-------------|-------------|
-| `sync_metadata` | `key` (PK), `value`, `updated_at` | Key-value store for sync timestamps |
+The `sync_metadata` table is a key-value store. Its keys are `last_config_sync`, `last_sensor_persist`, `last_data_push`, `last_cloud_seen` and `last_epoch`.
 
-## Initialization
+## Migrations
 
-Schema is created automatically at startup via SQLAlchemy's `create_all()` (called in the FastAPI lifespan). Initial seed data (units, variables, sensor models, actuator models) is inserted by `db/02_seed.sql`, mounted into the PostgreSQL container:
+The schema files run only once, against an empty database. Changes to a live database go in a new dated file, `database/migrations/YYYY-MM-DD_topic.sql`, applied by hand with `psql`.
 
-```yaml
-# rasp5/compose.yaml
-db:
-  image: postgres:17.6
-  volumes:
-    - ./db/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-    - ./db/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
-```
-
-The `create_all()` call is idempotent — safe to run on re-deploy.
-
-## Cloud Schema Migration
-
-When new columns are added to the cloud database, migrations are kept in `database/schemas/cloud/`. Run them once against the cloud instance with `psql`:
-
-```sql
--- Example: database/schemas/cloud/03_phase6_migration.sql
-ALTER TABLE device ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
-ALTER TABLE device ADD COLUMN IF NOT EXISTS device_ip VARCHAR;
-```
-
-## Accessing the Database
+On the cloud VM (Linux), from `cloud/deploy/`:
 
 ```bash
-# Pi-local (via Makefile)
-make db-shell       # opens psql inside the db container
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' < ../../database/migrations/<file>.sql
 ```
 
-## Sync State Tracking
+## Accessing the database
 
-Two columns drive the sync state machine:
+On the Pi (Linux), from `deploy/`:
 
-- `measurement.is_synced` — set to `False` on insert (Pi), `True` after a successful `POST /sync/devices/{id}/measurements`
-- `photo.is_synced` — set to `False` when captured locally, `True` after the R2 upload + cloud metadata push
+```bash
+make db-shell   # psql shell inside the db container
+```
 
-The `sync_metadata` table stores wall-clock timestamps for observability:
+## Device token
 
-| Key | Set when |
-|-----|----------|
-| `last_sensor_persist` | Sensor data written to local DB |
-| `last_config_sync` | Config successfully pulled from cloud |
-| `last_data_push` | Measurements + photos successfully pushed to cloud |
+`device.device_token` is the secret a Pi uses for cloud sync. It is:
 
-The cloud-side `device.last_seen_at` column is updated on every successful sync call (config pull, measurements push, or photo push) via the `_touch_last_seen()` helper in the sync routes. This timestamp drives the online/stale/offline status badge in the admin dashboard.
-
-## Cloud-side Device Token
-
-`device.device_token` is a `secrets.token_urlsafe(32)` string. It is:
-
-- **Auto-generated** by `POST /admin/devices` at device creation time
-- **Shown once** in the `DeviceAdminRead` response at creation — copy it immediately
-- **Rotatable** via `POST /admin/devices/{id}/token` (requires user JWT)
-- **Never returned** in subsequent read responses
-- **Used by the Pi** as `Authorization: Bearer <token>` on every sync call
-- **Stored in** `rasp5/.env` as `DEVICE_TOKEN`
+- **Generated** by the cloud when the device is created, and shown once in that response
+- **Rotatable by an admin via `POST /admin/devices/{id}/token`**, which returns the new token once and invalidates the old one
+- **Never returned** by the list, get or update routes
+- **Sent by the Pi** as `Authorization: Bearer <token>` on every `/sync/**` call
+- **Stored in the Pi's `.env` as `DEVICE_TOKEN`**

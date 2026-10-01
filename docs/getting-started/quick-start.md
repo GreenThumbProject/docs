@@ -8,8 +8,10 @@ Complete the [Installation](installation.md) guide first.
 
 ## 1. Start the System
 
+On the Pi (Linux):
+
 ```bash
-cd ~/Documents/greenthumb/rasp5   # or wherever you cloned rasp5
+cd ~/Documents/greenthumb/rasp5/deploy
 make up
 ```
 
@@ -21,19 +23,21 @@ Open your browser and navigate to:
 http://<raspberry-pi-ip>
 ```
 
-The local dashboard (React SPA) shows live sensor cards, sparkline charts, an MJPEG camera feed, threshold editor, and sync status.
+The local dashboard has four pages: Dashboard (live readings, history, camera), Actuators, Cultivation (control rules) and Settings (sync).
 
 ## 3. View Live Video
 
 The MJPEG stream is embedded in the dashboard. Direct URL:
 
 ```
-http://<raspberry-pi-ip>:8080/video/stream
+http://<raspberry-pi-ip>/camera/stream
 ```
 
 ## 4. Check System State
 
-### Get Current State (Sensors + Thresholds)
+### Get Current State
+
+On the Pi (Linux):
 
 ```bash
 curl http://localhost:8080/state/
@@ -44,9 +48,15 @@ Response:
 ```json
 {
   "sensors": {...},
-  "thresholds": [...],
+  "sensor_values": {...},
+  "variables": {...},
+  "control_rules": [...],
+  "actuators": [...],
+  "effects": [...],
+  "active_phase": {...},
   "safety_mode": false,
-  "timestamp": "2026-02-03T12:00:00"
+  "timezone": "...",
+  "timestamp": "..."
 }
 ```
 
@@ -56,62 +66,65 @@ Response:
 curl http://localhost:8080/data/latest
 ```
 
-Response:
-
-```json
-{
-  "device_id": 1,
-  "data": {
-    "Temperature": {"value": 25.3, "unit": "°C", "collected_at": "..."},
-    "Humidity": {"value": 65.2, "unit": "%", "collected_at": "..."}
-  }
-}
-```
+Returns a list with the latest measurement row for each active sensor.
 
 ## 5. Control Actuators
 
-### Set RGB LED Color
+On the Pi (Linux):
 
 ```bash
-curl -X POST "http://localhost:8080/state/actuators/1/command" \
+# List actuators
+curl http://localhost:8080/actuator/
+
+# Turn one on for 30 seconds
+curl -X POST http://localhost:8080/actuator/<id>/command \
   -H "Content-Type: application/json" \
-  -d '{"r": 255, "g": 0, "b": 128}'
+  -d '{"action": "on", "duration_s": 30}'
 ```
 
-### Set Pump Duty Cycle
+A manual command holds the actuator until you release it:
 
 ```bash
-curl -X POST "http://localhost:8080/state/actuators/2/command" \
-  -H "Content-Type: application/json" \
-  -d '{"duty_cycle": 50}'
+curl -X POST http://localhost:8080/actuator/<id>/release
 ```
+
+A 409 means a safety bound refused the command.
 
 ## 6. Monitor Logs
+
+On the Pi (Linux), from `deploy/`:
 
 ```bash
 # All services
 make logs
 
 # Specific services
-make logs-api    # API logs
-make logs-ctrl   # Controller logs
+make logs-api          # API logs
+make logs-controller   # Controller logs
 ```
 
 ## Common Commands
+
+Run from `deploy/` on the Pi.
 
 | Command | Description |
 |---------|-------------|
 | `make up` | Start all services |
 | `make down` | Stop all services |
-| `make logs` | View all logs |
-| `make logs-api` | View API logs |
-| `make logs-ctrl` | View controller logs |
-| `make update` | Pull latest images + restart |
-| `make status` | Container health + last sync times |
-| `make backup` | Dump local DB to `/data/backups/` |
+| `make ps` | Service status |
+| `make logs` | Follow all logs |
+| `make logs-<svc>` | Follow one service (e.g. `make logs-controller`) |
+| `make restart-<svc>` | Restart one service |
+| `make pull` | Pull new images (does not restart api or controller) |
+| `make promote` | Apply pulled api and controller images (relays may switch; do it with the rig in view) |
+| `make deploy` | `git pull`, then up |
+| `make status` | Pi health: temperature, throttling, load |
 | `make db-shell` | PostgreSQL shell |
+| `make verify` | Project and volume names, build versions, sync backlog |
 
 ## Trigger a Manual Cloud Sync
+
+On the Pi (Linux):
 
 ```bash
 curl -X POST http://localhost:8080/settings/sync
@@ -120,6 +133,8 @@ curl -X POST http://localhost:8080/settings/sync
 Or click **Sync Now** in the local dashboard Settings page.
 
 ## Troubleshooting
+
+Run these on the Pi, from `~/Documents/greenthumb/rasp5/deploy`.
 
 ### Camera Not Working
 
@@ -135,7 +150,7 @@ make logs-api
 
 ```bash
 # Check I2C devices
-i2cdetect -y 1
+sudo i2cdetect -y 1
 
 # Expected addresses:
 # 0x38 - AHT10
@@ -147,7 +162,7 @@ i2cdetect -y 1
 
 ```bash
 # Check controller logs
-make logs-ctrl
+make logs-controller
 
 # Verify API is healthy
 curl http://localhost:8080/
@@ -155,7 +170,7 @@ curl http://localhost:8080/
 
 ### Safety Mode Activated
 
-If actuators turn off unexpectedly, the controller may have crashed:
+If actuators turn off unexpectedly, the API has not heard from the controller for 60 s and has entered safety mode. Check `curl http://localhost:8080/state/safety`, then:
 
 ```bash
 # Check controller status

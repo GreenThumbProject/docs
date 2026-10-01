@@ -1,14 +1,14 @@
 # Research
 
-GreenThumb is developed as part of a **PIBITI undergraduate research project** at Insper Instituto de Ensino e Pesquisa.
+GreenThumb started as a **PIBITI undergraduate research project** at Insper Instituto de Ensino e Pesquisa.
 
 ## Project Information
 
 **Institution**: Insper Instituto de Ensino e Pesquisa
 
-**Program**: PIBITI (Institutional Program for Scientific and Technological Initiation Scholarships)
+**Program**: PIBITI (Institutional Program of Initiation Scholarships in Technological Development and Innovation)
 
-**Duration**: August 2025 – August 2026 (12 months)
+**Duration**: 12 months, 2025–2026 (final report delivered in August 2026)
 
 **Researcher**: Henrique Bucci R. Netto
 
@@ -18,7 +18,5 @@ The project studies controlled-environment plant production with an emphasis on 
 
 ## Publication
 
-A research paper describing the methodology and results is planned for the end of the project.
-
-!!! info "Paper coming soon"
-    Detailed methodology, experimental design, literature review, and results will be shared through the published paper. Check back for a link once it is available.
+!!! info "Not yet published"
+    The research report is not public. Results will be shared only through a published paper; this page will link it once it is available.

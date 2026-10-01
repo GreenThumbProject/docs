@@ -3,10 +3,7 @@
 How a Raspberry Pi node and a developer workstation reach each other, and reach the cloud stack, without
 exposing anything to the public internet.
 
-!!! info "This replaces the old Tailscale guide"
-    GreenThumb ran on Tailscale during early development. It was decommissioned in July 2026 in favour of
-    a self-hosted WireGuard hub. The reasoning: one less third-party dependency in the path between a
-    grower's node and their data, no external coordination server, and no account tier to outgrow.
+Why WireGuard: no third-party coordination service between a grower's node and their data, and no account tier to outgrow.
 
 ## Topology
 
@@ -25,7 +22,8 @@ flowchart TB
     HUB --- CLOUD["Cloud stack<br/>API · auth · account · dashboard"]
 ```
 
-Only the hub has a public address, and only its WireGuard port is reachable. The Pi needs no port
+Only the hub has a public address. It exposes the WireGuard port and the public landing site; everything
+else on it is bound to the VPN. The Pi needs no port
 forwarding, no static IP and no inbound firewall rule, which is what makes a node deployable on a
 domestic connection behind NAT.
 
@@ -35,17 +33,18 @@ domestic connection behind NAT.
 |---|---|---|
 | Landing page | Public internet | Static site, ports 80/443 |
 | Cloud API and admin dashboard | VPN only | Public routes are deliberately not served |
-| Pi local dashboard and API | VPN only | By construction, no auth on the Pi API |
-| SSH to the Pi | VPN only | Key-based, over the VPN address |
+| Pi local dashboard and API | VPN and the node's local network | Never port-forwarded |
+| SSH to the Pi | VPN (or the local network) | Key-based |
 
-!!! warning "The Pi API has no authentication"
-    That is acceptable precisely because it is only reachable inside the VPN. Do not expose it. Bearer
-    tokens are required before any node is reachable by an external user.
+!!! warning "Keep the node private"
+    The node's dashboard and API are meant for a trusted local network or the VPN. Never port-forward them.
 
 ## Enrolling a node
 
-Unlike Tailscale, WireGuard has no auth key and no signup step. Enrolment is a one-time exchange of
+WireGuard has no auth key and no signup step. Enrolment is a one-time exchange of
 public keys, done deliberately on both ends.
+
+On the Pi (Linux):
 
 ### 1. Install on the Pi
 
@@ -102,8 +101,9 @@ sudo wg show wg0 latest-handshakes    # seconds since each peer was last heard f
 sudo wg show wg0 transfer             # bytes in/out per peer
 ```
 
-A `latest-handshake` older than roughly 180 seconds means the peer is effectively offline. This is the
-signal the fleet's online/offline heartbeat is built on.
+A `latest-handshake` older than roughly 180 seconds means the peer is effectively offline. It is a quick
+manual check. The fleet's online/offline status in the cloud comes from the node's own sync requests, not
+from WireGuard.
 
 !!! tip "A stale handshake is not the same as a dead node"
     A node that loses its uplink keeps collecting and buffering measurements locally, and flushes them

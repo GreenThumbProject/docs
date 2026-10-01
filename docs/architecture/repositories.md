@@ -1,149 +1,76 @@
 # Repositories
 
-GreenThumb uses a multi-repository architecture for better separation of concerns and scalability.
+GreenThumb's code lives in the `GreenThumbProject` GitHub organization. Two superprojects pull the individual repositories in as git submodules: `rasp5` for the Raspberry Pi node and `greenthumb-cloud` for the cloud backend. All repositories are private except `docs` (this site) and `.github` (the organization profile).
 
 ## Repository Structure
 
 ```mermaid
 graph TB
-    ORG[GreenThumbProject]
-    
-    CORE[greenthumb-core]
     RASP5[rasp5]
-    CLIENT[microcontroller-api-client]
+    CLOUD[greenthumb-cloud]
+    MODELS[greenthumb-models]
     DB[database]
-    CRON[cron]
-    DOCS[docs]
-    RESEARCH[research]
-    GITHUB[.github]
-    
-    ORG --> CORE
-    ORG --> RASP5
-    ORG --> CLIENT
-    ORG --> DB
-    ORG --> CRON
-    ORG --> DOCS
-    ORG --> RESEARCH
-    ORG --> GITHUB
-    
-    CORE -->|imported by| RASP5
-    CORE -->|imported by| CLIENT
-    CORE -->|imported by| CRON
-    DB -->|schemas used by| RASP5
+
+    RASP5 --> API[microcontroller-api]
+    RASP5 --> CLIENT[microcontroller-api-client]
+    RASP5 --> RPI5[greenthumb-rpi5]
+    RASP5 --> LDASH[local-dashboard]
+    RASP5 --> MODELS
+
+    CLOUD --> GAPI[greenthumb-api]
+    CLOUD --> GW[gateway]
+    CLOUD --> AUTH[auth]
+    CLOUD --> AUTHS[auth-service]
+    CLOUD --> ACC[account]
+    CLOUD --> ACCS[account-service]
+    CLOUD --> ADM[admin-dashboard]
+    CLOUD --> LAND[landing-page]
+    CLOUD --> MODELS
+
+    DB -.->|"schema-sync copies"| RASP5
+    DB -.->|"schema-sync copies"| CLOUD
 ```
 
-## Core Repositories
+Solid arrows are submodules. `greenthumb-models` is a submodule of both superprojects. The `database` repository is not a submodule: its schema is copied into each superproject.
 
-### greenthumb-core
+## Edge (Raspberry Pi node)
 
-**Private** | Python Package
+| Repository | Role |
+|------------|------|
+| `rasp5` | Superproject for the Pi node: Docker Compose stack and its 5 submodules |
+| `microcontroller-api` | FastAPI service on the Pi (:8080): hardware control, local data, settings |
+| `microcontroller-api-client` | The controller: Sense-Think-Act loop over the Pi API |
+| `greenthumb-rpi5` | Hardware drivers and the DeviceManager |
+| `local-dashboard` | React dashboard served on the node |
 
-Shared library containing:
+## Cloud
 
-- SQLModel database definitions
-- Database utilities (engine, session)
-- Raspberry Pi 5 hardware interfaces
-- Sensor and actuator drivers
-- CRUD router generation for FastAPI
+| Repository | Role |
+|------------|------|
+| `greenthumb-cloud` | Superproject for the cloud backend: Docker Compose stack and its 9 submodules |
+| `greenthumb-api` | FastAPI service: admin API and Pi sync endpoints |
+| `gateway` | Spring Cloud Gateway, the backend's single entry point |
+| `auth` + `auth-service` | JWT login and validation (library + Spring Boot service) |
+| `account` + `account-service` | User accounts (library + Spring Boot service) |
+| `admin-dashboard` | React admin dashboard |
+| `landing-page` | React landing site |
 
-```bash
-# Install in other projects
-pip install git+https://${GH_PAT}@github.com/GreenThumbProject/greenthumb-core.git
-```
+## Shared
 
-### rasp5
+| Repository | Role |
+|------------|------|
+| `greenthumb-models` | Python package `greenthumb`: SQLModel tables, sync schemas, shared helpers; used by the Pi API and the cloud API |
+| `database` | SQL source of truth: schemas, seeds and dated SQL migrations |
 
-**Private** | Docker Compose Deployment
+## Other
 
-Main Raspberry Pi 5 deployment:
+| Repository | Role |
+|------------|------|
+| `peripheral-drivers-dev` | Notebooks for testing peripheral drivers on real hardware |
+| `research` | Research materials (private) |
+| `docs` | This documentation site (public) |
+| `.github` | Organization profile (public) |
 
-- Docker Compose configuration
-- Microcontroller API service (hardware control)
-- Database initialization scripts
-- Makefile commands
+## Archived
 
-### microcontroller-api-client
-
-**Private** | Controller Scripts
-
-HTTP-based client for greenhouse control:
-
-- `controller` script: Sense-Think-Act loop
-- Future: Additional control scripts
-- Future: ML agent implementations
-
-### database
-
-**Private** | SQL Schemas
-
-Database management:
-
-- PostgreSQL schemas
-- Seed data
-- Future: Alembic migrations
-
-### cron
-
-**Private** | Scheduled Tasks
-
-Cron jobs and scheduled tasks:
-
-- Cloud sync
-- Image upload (Cloudflare R2)
-- Database cleanup
-
-## Documentation & Research
-
-### docs
-
-**Public** | MkDocs Site
-
-This documentation website:
-
-- Installation guides
-- Architecture docs
-- API reference
-- Project summaries (EN/PT)
-
-Deployed to: [greenthumbproject.github.io/docs](https://greenthumbproject.github.io/docs)
-
-### research
-
-**Private** | Academic Materials
-
-Research project documents:
-
-- PIBITI proposal
-- Research paper (PT/EN)
-- References and notes
-
-### .github
-
-**Public** | Organization Profile
-
-Organization-level files:
-
-- Profile README
-- AI context file
-- Shared issue templates
-
-## Future Repositories
-
-| Repository | Purpose |
-|------------|---------|
-| `greenthumb-esp32` | ESP32 library (if modular) |
-| `cloud` | Cloud API, database and object-storage integration |
-| `ml` | Machine learning models and agents |
-
-## Naming Convention
-
-- **`greenthumb-*`** - Only for installable packages/libraries
-- **Short names** - For applications and deployments
-
-Examples:
-
-- ✅ `greenthumb-core` (Python package)
-- ✅ `rasp5` (deployment)
-- ✅ `microcontroller-api-client` (client scripts)
-- ✅ `database` (not an installable package)
-- ❌ `greenthumb-database` (not a package)
+`greenthumb-core` (the former shared library, no longer used) and `legacy`.

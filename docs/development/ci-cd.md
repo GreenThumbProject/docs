@@ -1,89 +1,50 @@
 # CI/CD Pipeline
 
-GreenThumb uses GitHub Actions for continuous integration and deployment.
+GreenThumb uses GitHub Actions to test the shared package, build Docker images and publish this site.
 
-## Overview
+## Branches
+
+- Work lands on `main`.
+- Merging into `prod` builds the images, and the devices run what `prod` built.
+- This documentation site publishes from `main`.
 
 ```mermaid
 graph LR
-    DEV[Developer] -->|push| GH[GitHub]
-    GH -->|trigger| GA[GitHub Actions]
-    GA -->|build| DH[Docker Hub]
-    DH -->|pull| WT[Watchtower]
-    WT -->|restart| RPI[Raspberry Pi]
+    MAIN[main] -->|merge| PROD[prod]
+    PROD -->|GitHub Actions| HUB[Docker Hub]
+    HUB -->|checked hourly| NODE[Node]
+    HUB -->|checked every 5 min| VM[Cloud VM]
 ```
 
 ## Workflows
 
-### rasp5: Build and Push
+| Repository | Workflow | Runs on | What it does |
+|------------|----------|---------|--------------|
+| `rasp5` | `.github/workflows/build.yml` | push to `prod`, manual dispatch | Builds 3 `linux/arm64` images: `microcontroller-api`, `microcontroller-api-client`, `local-dashboard`. The `greenthumb-models` tests gate the API image. A models change also bumps the cloud's models pin, and the bump is refused when the sync contract version changes. |
+| `greenthumb-cloud` | `.github/workflows/cloud-images.yml` | push to `prod`, manual dispatch | Builds 6 `linux/amd64` images: `greenthumb-gateway`, `greenthumb-cloud-api`, `greenthumb-auth-service`, `greenthumb-account-service`, `greenthumb-admin-dashboard`, `greenthumb-landing`. |
+| `greenthumb-models` | `.github/workflows/tests.yml` | every push and pull request | Runs the shared package's test suite. |
+| `docs` | `.github/workflows/deploy.yml` | push to `main`, manual dispatch | Builds this site with MkDocs and deploys it to GitHub Pages. |
 
-**File**: `.github/workflows/build.yml`
+Both image workflows rebuild only the images whose code changed. A manual dispatch builds all of them, and it refuses to run from any branch but `prod`.
 
-**Triggers**:
-- Push to `main` branch
-- Manual dispatch
+## Image tags
 
-**Steps**:
+Every image is tagged `:prod` and `:<short-sha>` (the short commit SHA of the build). The stacks run `:prod` by default.
 
-1. Checkout code
-2. Set up QEMU (for ARM64 builds)
-3. Set up Docker Buildx
-4. Login to Docker Hub
-5. Build and push `greenthumb-api`
-6. Build and push `greenthumb-data-collection`
+To pin or roll back a release, set `IMAGE_TAG=<short-sha>` in the deployment's `.env` and bring the stack up again.
 
-```yaml
-name: Build and Push Docker Images
+## Automatic updates (Watchtower)
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+| Host | Checks | Updated automatically | Updated by hand |
+|------|--------|-----------------------|-----------------|
+| Node (Raspberry Pi) | hourly | `local-dashboard` | `api` and `controller`: `make pull`, then `make promote` |
+| Cloud VM | every 5 minutes | `dashboard` and `landing` | `gateway`, `greenthumb-api`, `auth-service`, `account-service`: `make promote` |
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: docker/setup-qemu-action@v3
-      
-      - uses: docker/setup-buildx-action@v3
-      
-      - uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
-      - uses: docker/build-push-action@v5
-        with:
-          context: ./fastapi
-          platforms: linux/arm64
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/greenthumb-api:latest
-          build-args: |
-            GH_PAT=${{ secrets.GH_PAT }}
-```
-
-### docs: Deploy Documentation
-
-**File**: `.github/workflows/deploy.yml`
-
-**Triggers**:
-- Push to `main` branch
-- Manual dispatch
-
-**Steps**:
-
-1. Checkout code
-2. Setup Python
-3. Install MkDocs dependencies
-4. Build documentation
-5. Deploy to GitHub Pages
+The node's `api` and `controller` drive hardware, so they are never replaced unattended. Recreating `api` can switch relays, so promote it with the rig in view.
 
 ## Required Secrets
 
-### Repository Secrets (rasp5)
+### Repository Secrets (rasp5 and greenthumb-cloud)
 
 | Secret | Description |
 |--------|-------------|
@@ -98,92 +59,13 @@ jobs:
 3. Click "New repository secret"
 4. Enter name and value
 
-## Automatic Updates
-
-### Watchtower
-
-Watchtower runs on the Raspberry Pi and automatically:
-
-1. Polls Docker Hub every 5 minutes
-2. Pulls new images when available
-3. Restarts containers with new images
-4. Cleans up old images
-
-**Configuration** (in `compose.yaml`):
-
-```yaml
-watchtower:
-  image: containrrr/watchtower
-  restart: unless-stopped
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-  environment:
-    WATCHTOWER_POLL_INTERVAL: 300
-    WATCHTOWER_CLEANUP: "true"
-```
-
-## Deployment Flow
-
-1. **Developer pushes to main**
-   ```bash
-   git push origin main
-   ```
-
-2. **GitHub Actions builds**
-   - ~5-10 minutes for ARM64 build
-   - Images pushed to Docker Hub
-
-3. **Watchtower detects update**
-   - Checks every 5 minutes
-   - Pulls new images
-
-4. **Containers restart**
-   - Zero-downtime for api/data_collection
-   - Database persists data
-
-## Monitoring
-
-### Check Build Status
-
-- Go to repository > Actions tab
-- View workflow runs and logs
-
-### Check Deployment Status
-
-```bash
-# On Raspberry Pi
-docker compose ps
-docker compose logs watchtower
-```
-
-### Verify New Version
-
-```bash
-docker images
-# Check image creation date
-```
-
 ## Troubleshooting
 
-### Build Fails
+- **A build failed or did not start:** open the repository's **Actions** tab and read the run's logs. Check that the push went to `prod` and that the secrets are set.
+- **The node still runs an old version:** on the Pi, from `deploy/`, run `make pull`, then `make promote`.
+- **The cloud still runs an old version:** on the VM, from `deploy/`, run `make promote`.
 
-- Check GitHub Actions logs
-- Verify secrets are set correctly
-- Ensure Dockerfile is valid
+## Related
 
-### Watchtower Not Updating
-
-```bash
-# Check watchtower logs
-docker compose logs watchtower
-
-# Force pull
-docker compose pull
-docker compose up -d
-```
-
-### ARM64 Build Issues
-
-- Ensure QEMU is set up
-- Check platform is `linux/arm64`
-- Verify base image supports ARM64
+- [Contributing](contributing.md) - Branches and commit messages
+- [Local Setup](local-setup.md) - Development environment

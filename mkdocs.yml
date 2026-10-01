@@ -1,5 +1,5 @@
 site_name: GreenThumb Documentation
-site_url: https://greenthumbproject.github.io/docs
+site_url: https://docs.greenthumbsystems.com/
 repo_url: https://github.com/GreenThumbProject/docs
 repo_name: GreenThumbProject/docs
 
@@ -43,7 +43,7 @@ nav:
     - Diagrams: architecture/diagrams.md
   - Components:
     - Raspberry Pi 5: components/rasp5.md
-    - Python Packages: components/greenthumb-core.md
+    - Python Packages: components/greenthumb-models.md
     - Database: components/database.md
     - Cloud Backend: components/cloud.md
     - Sensors: components/sensors.md

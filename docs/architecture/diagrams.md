@@ -18,18 +18,27 @@ graph TB
         TSL[TSL2561<br/>Light]
     end
     
-    subgraph "Actuators"
+    subgraph "Camera"
         CAM[USB Camera]
-        LED[RGB LED Strip]
-        PUMP[Water Pump]
+    end
+    
+    subgraph "Actuators"
+        RELAY[8-channel relay bank]
+        LIGHT[Grow light]
+        FAN[Fan]
+        PUMP["Water / air pump"]
+        DOSE[Dosing pumps]
     end
     
     GPIO --> AHT
     GPIO --> BMP
     GPIO --> TSL
     USB --> CAM
-    GPIO --> LED
-    GPIO --> PUMP
+    GPIO --> RELAY
+    RELAY --> LIGHT
+    RELAY --> FAN
+    RELAY --> PUMP
+    RELAY --> DOSE
 ```
 
 ## Docker Services
@@ -55,109 +64,21 @@ graph LR
     BROWSER --> DASH
     BROWSER --> API
     DH --> WT
-    WT -->|rolling restart| API
-    WT -->|rolling restart| CTRL
+    WT -->|auto-update| DASH
+    WT -.->|"notify only, manual promote"| API
+    WT -.->|"notify only, manual promote"| CTRL
 ```
 
 ## Database Schema
 
-```mermaid
-erDiagram
-    DEVICE ||--o{ DEVICE_SENSOR : has
-    DEVICE ||--o{ DEVICE_ACTUATOR : has
-    DEVICE ||--o{ CULTIVATION : hosts
-    SENSOR_MODEL ||--o{ DEVICE_SENSOR : defines
-    SENSOR_MODEL ||--o{ SENSOR_CAPABILITY : has
-    ACTUATOR_MODEL ||--o{ DEVICE_ACTUATOR : defines
-    VARIABLE ||--o{ SENSOR_CAPABILITY : measured_by
-    VARIABLE ||--o{ MEASUREMENT : records
-    DEVICE_SENSOR ||--o{ MEASUREMENT : produces
-    PLANT_SPECIES ||--o{ CULTIVATION : grows
-    CULTIVATION ||--o{ THRESHOLD : has
-    UNIT ||--o{ VARIABLE : default_for
-    
-    DEVICE {
-        int id_device PK
-        string name
-        string mac_address
-        string location
-        timestamp created_at
-    }
-    
-    SENSOR_MODEL {
-        int id_sensor_model PK
-        string model_name
-        string manufacturer
-    }
-    
-    ACTUATOR_MODEL {
-        int id_actuator_model PK
-        string model_name
-        string manufacturer
-    }
-    
-    DEVICE_SENSOR {
-        int id_device_sensor PK
-        int id_device FK
-        int id_sensor_model FK
-        string port_address
-        boolean is_active
-    }
-    
-    DEVICE_ACTUATOR {
-        int id_device_actuator PK
-        int id_device FK
-        int id_actuator_model FK
-        json config
-        boolean is_active
-    }
-    
-    VARIABLE {
-        int id_variable PK
-        string name
-        string description
-        int default_unit_id FK
-    }
-    
-    MEASUREMENT {
-        int id_measurement PK
-        timestamp collected_at
-        float value
-        int id_device_sensor FK
-        int id_variable FK
-    }
-    
-    THRESHOLD {
-        int id_threshold PK
-        int id_cultivation FK
-        int id_variable FK
-        float min_value
-        float max_value
-        float target_value
-        int id_actuator_action FK
-    }
-    
-    PLANT_SPECIES {
-        int id_plant_species PK
-        string name
-        string scientific_name
-    }
-    
-    CULTIVATION {
-        int id_cultivation PK
-        int id_device FK
-        int id_plant_species FK
-        timestamp start_date
-        timestamp end_date
-    }
-```
+The schema is described on the [Database](../components/database.md) page; the source of truth is the `database` repository.
 
 ## CI/CD Pipeline
 
 ```mermaid
 graph LR
     subgraph "Developer"
-        DEV[Push to main]
+        DEV[Push to prod]
     end
     
     subgraph "GitHub Actions"
@@ -166,8 +87,9 @@ graph LR
     end
     
     subgraph "Docker Hub"
-        API_IMG[microcontroller-api:latest]
-        CTRL_IMG[microcontroller-api-client:latest]
+        API_IMG["microcontroller-api:prod"]
+        CTRL_IMG["microcontroller-api-client:prod"]
+        DASH_IMG["local-dashboard:prod"]
     end
     
     subgraph "Raspberry Pi"
@@ -179,10 +101,14 @@ graph LR
     BUILD --> PUSH
     PUSH --> API_IMG
     PUSH --> CTRL_IMG
+    PUSH --> DASH_IMG
     API_IMG --> WT
     CTRL_IMG --> WT
-    WT --> CONTAINERS
+    DASH_IMG --> WT
+    WT -->|"dashboard automatic · api/controller manual promote"| CONTAINERS
 ```
+
+The cloud stack follows the same flow (its own workflow, push to `prod`).
 
 ## Control Loop (Sense-Think-Act)
 
@@ -200,20 +126,20 @@ sequenceDiagram
         CTRL->>API: GET /state/
         API->>HW: Read all sensors
         HW-->>API: Sensor values
-        API->>DB: Load thresholds
-        DB-->>API: Threshold data
+        API->>API: Control rules from DeviceManager (in memory)
+        API->>DB: Variable labels
         API-->>CTRL: SystemState
     end
     
     rect rgb(200, 200, 230)
         Note over CTRL: THINK
-        Note over CTRL: Compare values vs thresholds
+        Note over CTRL: Evaluate control rules (threshold, schedule, interval, after-actuator)
         Note over CTRL: Determine actions
     end
     
     rect rgb(230, 200, 200)
         Note over CTRL,HW: ACT
-        CTRL->>API: POST /state/actuators/{id}/command
+        CTRL->>API: POST /actuator/{id}/command
         API->>HW: Set actuator state
         HW-->>API: OK
         API-->>CTRL: OK
@@ -224,7 +150,7 @@ sequenceDiagram
 
 ## Cloud Integration
 
-Each Pi node syncs to a shared cloud backend over HTTPS. The cloud runs a self-hosted PostgreSQL 17 + TimescaleDB instance for the fleet database, and Cloudflare R2 for photos.
+Each Pi node syncs to the cloud API over the WireGuard VPN. The cloud runs a self-hosted PostgreSQL 17 + TimescaleDB instance for the fleet database, and Cloudflare R2 for photos.
 
 ```mermaid
 graph TB
@@ -244,23 +170,26 @@ graph TB
         AUTH[auth-service :8081]
         ACC[account-service :8082]
         SUPDB[(PostgreSQL 17 + TimescaleDB)]
-        SUPSTORAGE[Cloudflare R2\nplant-photos]
+        SUPSTORAGE["Cloudflare R2 (photos)"]
+        LANDING[Landing page]
     end
 
     subgraph "Admin"
-        ADMINDASH[Admin Dashboard :5173]
+        ADMINDASH["Admin Dashboard (nginx)"]
     end
 
-    RPI1 -->|HTTPS sync| GW
-    RPI2 -->|HTTPS sync| GW
+    RPI1 -->|sync over WireGuard| GW
+    RPI2 -->|sync over WireGuard| GW
     GW --> GAPI
     GW --> AUTH
-    GW --> ACC
+    AUTH --> ACC
     GAPI --> SUPDB
     GAPI --> SUPSTORAGE
     AUTH --> SUPDB
     ACC --> SUPDB
     ADMINDASH --> GW
 ```
+
+The admin dashboard and API are not public yet; only the landing page is.
 
 Sync is best-effort and offline-safe: the Pi queues unsynced rows locally and pushes them when connectivity is restored.

@@ -1,178 +1,66 @@
 # Actuators
 
-GreenThumb uses GPIO-controlled actuators connected to the Raspberry Pi 5 for environmental control.
+Actuators are drivers in the `greenthumb-rpi5` package. The driver class tracks what a load does. How it is wired is data on its `device_component` row: `interface` (relay or PWM line), `address` (the BCM pin) and `instance_config` (for example relay polarity). A relay line becomes an on/off output and a PWM line becomes a dimmable one, with no code change.
+
+!!! note "v1 prototype"
+    The v1 prototype is a single bench rig. Not every supported component is fitted, and probes and dosing pumps must be calibrated before automatic dosing is used.
+
+!!! warning "Power"
+    Mains and 12 V loads are switched through a relay board or MOSFET, never driven from a GPIO pin.
 
 ## Supported Actuators
 
-| Actuator | Control | Purpose |
-|----------|---------|---------|
-| RGB LED | PWM (3 channels) | Grow lighting |
-| Water Pump | PWM | Irrigation |
-| Camera | USB | Monitoring (treated as actuator for control) |
+| Class | Registry keys | Accepted fields |
+|-------|---------------|-----------------|
+| `SwitchedLoad` | `GROW_LIGHT_RELAY`, `EXHAUST_FAN`, `WATER_PUMP`, `AIR_PUMP` | `duration_s`; also `level` when wired to a PWM line. A load with no switched line (the USB air pump) accepts no fields. |
+| `DosingPump` | `PERISTALTIC_PUMP` | As `SwitchedLoad`, plus `volume_ml` once the pump has a flow rate (`ml_per_s`) |
+| `TwoPartDoser` | `TWO_PART_DOSER` | `volume_ml` only. A virtual actuator that doses two `DosingPump`s at a fixed ratio. |
 
-## Hardware Connection
+Every command also carries `action` (`"on"` or `"off"`, required) and may carry `triggered_by`, `id_control_rule`, `reason` and `manual_override`. `GET /actuator/` lists each actuator with the fields its wiring accepts.
 
-### RGB LED Strip
+## Control
 
-Connect to GPIO pins with PWM capability:
-
-| Wire | GPIO Pin | Function |
-|------|----------|----------|
-| Red | GPIO 17 | Red channel PWM |
-| Green | GPIO 27 | Green channel PWM |
-| Blue | GPIO 22 | Blue channel PWM |
-| Ground | GND | Common ground |
-
-!!! warning "Power"
-    LED strips typically need external 12V power supply. Use a transistor or MOSFET to switch the LED power with the Pi's 3.3V GPIO.
-
-### Water Pump
-
-| Wire | GPIO Pin | Function |
-|------|----------|----------|
-| Control | GPIO 18 | PWM signal |
-| Ground | GND | Common ground |
-
-!!! warning "Power"
-    Pumps require external power. Use a relay or MOSFET controlled by the GPIO pin.
-
-## Database Configuration
-
-Actuators are registered in the database:
-
-```sql
--- Actuator models
-INSERT INTO actuator_model (model_name, manufacturer) VALUES
-    ('RGBLED', 'Generic'),
-    ('WaterPump', 'Generic'),
-    ('Camera', 'Generic');
-
--- Device actuators (example)
-INSERT INTO device_actuator (id_device, id_actuator_model, config, is_active) VALUES
-    (1, 1, '{"pins": {"r": 17, "g": 27, "b": 22}}', true),
-    (1, 2, '{"pin": 18}', true);
-```
-
-## API Control
-
-Actuators are controlled via the `/state` API endpoints:
-
-### Set RGB LED Color
+`POST /actuator/{id}/command`. On the Pi (Linux):
 
 ```bash
-curl -X POST "http://localhost:8080/state/actuators/1/command" \
+curl -X POST "http://localhost:8080/actuator/1/command" \
   -H "Content-Type: application/json" \
-  -d '{"r": 255, "g": 128, "b": 0}'
+  -d '{"action": "on", "duration_s": 120}'
 ```
 
-### Set Pump Duty Cycle
+| Status | Meaning |
+|--------|---------|
+| 400 | A field is not supported by this actuator's wiring |
+| 409 | The command was refused by a safety bound |
+| 422 | Unknown field or invalid value |
+
+`POST /actuator/{id}/release` hands an actuator under manual override back to the controller. See the [API Reference](../api/reference.md) for every route.
+
+## Safety
+
+- **Per-actuator bounds** on the `device_component` row: maximum on-time (`max_on_s`), cooldown (`min_off_s`), dose cap (`max_dose_ml`) and a rolling dose budget (`budget_ml` over `budget_window_s`). Automated commands meet every bound. Manual commands skip the cooldown and dose guards but are still clamped to `max_on_s`, unless they set `manual_override`.
+- **Heartbeat watchdog:** the controller sends a heartbeat every cycle. If heartbeats stop, the API enters safety mode and turns every actuator off, except those flagged `fail_safe` (the air pump, which must keep the reservoir oxygenated). `PATCH /actuator/{id}/fail-safe` changes the flag.
+
+## Adding a New Actuator
+
+- **Another on/off load:** add its key to the `@register_component(...)` list on `SwitchedLoad` in `greenthumb_rpi5/actuator.py`, and add a `component_model` row with that `registry_key` in the `database` repository.
+- **New behaviour:** subclass `Actuator`, implement `activate` and `deactivate`, and register it with `@register_component("MY_KEY")`.
+
+Then add a `device_component` row for the node and restart the API. On the Pi (Linux):
 
 ```bash
-curl -X POST "http://localhost:8080/state/actuators/2/command" \
-  -H "Content-Type: application/json" \
-  -d '{"duty_cycle": 100}'
+cd deploy && make restart-api
 ```
 
-## Python Usage
+## Hardware Access
 
-```python
-from greenthumb_core.rpi5 import RGBLED, WaterPump
-
-# RGB LED
-led = RGBLED(config={"pins": {"r": 17, "g": 27, "b": 22}})
-led.init()
-led.command({"r": 255, "g": 0, "b": 255})  # Purple
-led.off()
-
-# Water Pump
-pump = WaterPump(config={"pin": 18})
-pump.init()
-pump.command({"duty_cycle": 50})  # 50% power
-pump.off()
-```
-
-## Adding New Actuators
-
-Adding a new actuator type requires three steps:
-
-### 1. Connect the Hardware
-
-Connect the actuator to appropriate GPIO pins with proper power management.
-
-### 2. Register in Database
-
-```sql
--- Register the actuator model
-INSERT INTO actuator_model (model_name, manufacturer) VALUES
-    ('NewActuator', 'Manufacturer');
-
--- Add to device
-INSERT INTO device_actuator (id_device, id_actuator_model, config, is_active) VALUES
-    (1, (SELECT id_actuator_model FROM actuator_model WHERE model_name = 'NewActuator'),
-     '{"pin": 23}', true);
-```
-
-### 3. Create Actuator Class
-
-Create a Python class in `greenthumb-core` that extends the `Actuator` base class:
-
-```python
-from dataclasses import dataclass
-from greenthumb_core.rpi5.actuator import Actuator, register_actuator
-
-@register_actuator("NewActuator")  # Must match database model_name
-@dataclass
-class NewActuator(Actuator):
-    """Driver for new actuator type."""
-    
-    async def init(self):
-        """Initialize actuator hardware."""
-        pin = self.config.get("pin", 23)
-        # Initialize GPIO, PWM, etc.
-        
-    async def command(self, payload: dict):
-        """Execute command on actuator."""
-        # Implement control logic
-        
-    async def off(self):
-        """Turn off actuator (safety state)."""
-        # Implement safe shutdown
-```
-
-!!! warning "Registration Required"
-    The `@register_actuator("NewActuator")` decorator is **required** to register the actuator in the `ACTUATOR_REGISTRY`. The name must **exactly** match the `model_name` in the `actuator_model` database table.
-
-### 4. Restart API
-
-```bash
-make restart-api
-```
-
-## Safety Mode
-
-When the controller stops sending heartbeats, the API enters **safety mode**:
-
-- All actuators are turned off using their `off()` method
-- Prevents uncontrolled operation if controller crashes
-- Can be reset by controller heartbeat
-
-## Troubleshooting
+The `api` container is given `/dev/i2c-1`, `/dev/video0` and the GPIO chip and runs privileged (see `rasp5/compose.yaml`).
 
 ### GPIO Permission Denied
 
+On the Pi (Linux):
+
 ```bash
-# Add user to gpio group
 sudo usermod -aG gpio $USER
-# Re-login required
-```
-
-### In Docker
-
-Containers need device access:
-
-```yaml
-devices:
-  - "/dev/gpiochip0:/dev/gpiochip0"
-  - "/dev/gpiochip4:/dev/gpiochip4"
-privileged: true
+# Log out and back in
 ```

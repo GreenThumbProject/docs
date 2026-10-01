@@ -1,6 +1,6 @@
 # Project Summary
 
-This document provides a comprehensive overview of the GreenThumb project.
+This document provides an overview of the GreenThumb project.
 
 ## Vision
 
@@ -8,36 +8,31 @@ GreenThumb is a **controlled-environment plant production system** that combines
 
 ## Current Status
 
-### Research Phase (2025-2026)
+### Origin
 
-The system is being developed as part of a 12-month PIBITI undergraduate research project at Insper.
+GreenThumb started as a 12-month PIBITI undergraduate research project at Insper (2025–2026). The research phase closed with the final report in August 2026; development of the system continues.
 
-**Key Objectives:**
+### What exists today
 
-1. Build a reliable controlled-environment cultivation platform
-2. Enable control of environmental variables through sensors and automation
-3. Collect consistent, well-structured cultivation data
-4. Validate the system with a physical prototype
+- Edge node on a Raspberry Pi 5 with Docker Compose (PostgreSQL, device API, controller, local dashboard, Watchtower)
+- Sensor drivers: AHT10, BMP280, TSL2561, DS18B20, float switch, pH and TDS/EC probes, USB camera
+- Relay-switched actuators: grow light, exhaust fan, water and air pumps, peristaltic dosing pumps
+- Controller with threshold, schedule, interval and after-actuator rules, safety bounds and a heartbeat watchdog (safety mode)
+- Periodic photos and a live camera stream
+- Offline-first sync to a self-hosted cloud (PostgreSQL 17 + TimescaleDB; photos in Cloudflare R2)
+- Cloud API, authentication services and an admin dashboard (not public yet)
+- CI/CD: GitHub Actions → Docker Hub
 
-### Completed Work
+### Next
 
-- ✅ Raspberry Pi 5 deployment with Docker Compose
-- ✅ CI/CD pipeline (GitHub Actions → Docker Hub → Watchtower)
-- ✅ I2C sensor integration (AHT10, BMP280, TSL2561)
-- ✅ PostgreSQL database for data storage
-- ✅ FastAPI REST API with centralized device management
-- ✅ Live video streaming
-- ✅ Shared library (`greenthumb-core`)
-- ✅ Controller client with Sense-Think-Act loop
-- ✅ Actuator system (RGB LED, water pump)
-- ✅ Safety mode and heartbeat mechanism
+- 🔄 Finishing the physical prototype
+- 🔄 Calibrating the dosing pumps and the pH and TDS probes
+- First cultivation run (cherry tomato)
 
-### In Progress
+### Planned
 
-- 🔄 Physical greenhouse prototype construction
-- 🔄 pH and EC sensor integration
-- 🔄 Cloud sync (self-hosted PostgreSQL + TimescaleDB, with Cloudflare R2 for images)
-- 🔄 Computer vision for growth analysis
+- **Computer Vision**: OpenCV for growth analysis
+- **Machine Learning**: Growth prediction models
 
 ## Technology Stack
 
@@ -50,25 +45,25 @@ The system is being developed as part of a 12-month PIBITI undergraduate researc
 | ORM | SQLModel |
 | Containers | Docker Compose |
 | CI/CD | GitHub Actions → Docker Hub |
+| Cloud services | FastAPI; Java (Spring Boot, Spring Cloud Gateway) |
+| Dashboards | React |
+| Cloud data | PostgreSQL 17 + TimescaleDB; Cloudflare R2 (photos) |
+| Networking | WireGuard |
 
 ### Sensors
 
 - **AHT10**: Temperature and humidity
 - **BMP280**: Atmospheric pressure and temperature
 - **TSL2561**: Light intensity
+- **DS18B20**: Water temperature
+- **Float switch**: Tank level (full or empty)
+- **pH and TDS/EC probes**: Nutrient solution pH and conductivity
 - **USB Camera**: Plant photos for computer vision
 
 ### Actuators
 
-- **RGB LED**: PWM-controlled lighting
-- **Water Pump**: PWM-controlled irrigation
-
-### Planned
-
-- **PostgreSQL 17 + TimescaleDB**: Self-hosted cloud database
-- **Cloudflare R2**: Image storage
-- **Computer Vision**: OpenCV for growth analysis
-- **Machine Learning**: Growth prediction models
+- **Grow light, exhaust fan, water and air pumps**: switched by relay
+- **Peristaltic dosing pumps**: nutrient and pH dosing with safety bounds
 
 ## System Architecture
 
@@ -79,44 +74,33 @@ Raspberry Pi 5
 ├── PostgreSQL (database)
 ├── microcontroller-api (API + hardware control)
 ├── controller (Sense-Think-Act loop client)
-├── cron (scheduled tasks)
+├── local-dashboard (React SPA)
 └── watchtower (auto-updates)
 ```
 
 All services run in Docker containers and share a common network.
 
+A self-hosted cloud stack (API, gateway, authentication services, admin dashboard, PostgreSQL + TimescaleDB) receives the synced data. See [Cloud Backend](../components/cloud.md).
+
 ## Repository Organization
 
-| Repository | Purpose |
-|------------|---------|
-| `greenthumb-core` | Shared Python library |
-| `rasp5` | Raspberry Pi 5 deployment |
-| `microcontroller-api-client` | Controller scripts |
-| `database` | Database schemas |
-| `cron` | Scheduled tasks |
-| `docs` | This documentation |
-| `research` | Research papers |
+See [Repositories](../architecture/repositories.md). Most repositories are private; this documentation and the organisation profile are public.
 
 ## Data Collection
 
 The system collects:
 
-- **Sensor data** via API on-demand
-- **Photos** for computer vision analysis
+- **Sensor data**, logged periodically
+- **Photos**, captured periodically for future computer-vision work
 
-Data is stored locally and will sync to cloud storage for ML training.
+Data is stored on the node first and synced to the cloud when a connection is available.
 
 ## Long-term Goals
 
-1. **Multiple Greenhouses**: Support managing more than one cultivation unit
+1. **Many nodes**: the cloud already registers and lists multiple devices; self-service onboarding is still to come.
 2. **Improved Automation**: Refine environmental control and monitoring
 
 ## Contact
 
 - **Developer**: Henrique Bucci R. Netto
-- **Email**: henriquebrn@al.insper.edu.br
 - **GitHub**: [GreenThumbProject](https://github.com/GreenThumbProject)
-
----
-
-*Last updated: February 2026*

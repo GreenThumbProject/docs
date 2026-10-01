@@ -1,538 +1,165 @@
 # API Reference
 
-GreenThumb exposes two REST APIs: the **Pi API** (runs on each Raspberry Pi node) and the **Cloud API** (runs in the cloud, accessed via the Gateway).
+GreenThumb exposes two REST APIs, both built with FastAPI: the **Pi API** (runs on each Raspberry Pi node) and the **Cloud API** (runs in the cloud, behind the gateway).
+
+Each API's Swagger UI (`/docs`) and OpenAPI schema (`/openapi.json`) are the authoritative reference for request and response bodies. This page is an index of the endpoints.
 
 ---
 
 ## Pi API
 
-**Base URL:** `http://<raspberry-pi-ip>:8080`
-
-Interactive docs: `http://<pi-ip>:8080/docs` (Swagger), `/redoc`
-
-### Endpoint Groups
-
-| Prefix | Description |
-|--------|-------------|
-| `/state` | System state for the Sense-Think-Act loop |
-| `/data` | Measurement history from local DB |
-| `/video` | Live MJPEG camera stream |
-| `/camera` | Photo capture |
-| `/settings` | Dashboard settings and sync control |
-
----
-
-### State Routes (`/state`)
-
-#### `GET /state/`
-
-Real-time system state used by the controller.
-
-**Response:**
-
-```json
-{
-  "sensors": {
-    "1": [{"id_variable": 1, "value": 25.3}],
-    "2": [{"id_variable": 2, "value": 65.1}]
-  },
-  "thresholds": [
-    {
-      "id_threshold": 1,
-      "id_cultivation_phase": 2,
-      "id_variable": 1,
-      "min_value": 20.0,
-      "max_value": 30.0,
-      "target_value": 25.0
-    }
-  ],
-  "safety_mode": false,
-  "timestamp": "2026-04-13T10:00:00"
-}
-```
-
----
-
-#### `POST /state/actuators/{id}/command`
-
-Command an actuator (concurrent-safe, per-actuator lock).
-
-**Path params:** `id` — `id_device_actuator`
-
-**Body (RGB LED):**
-```json
-{"r": 255, "g": 128, "b": 0}
-```
-
-**Body (Water Pump):**
-```json
-{"duty_cycle": 100}
-```
-
-**Response:**
-```json
-{"status": "ok", "actuator_id": 1, "command": {"duty_cycle": 100}}
-```
-
----
-
-#### `POST /state/heartbeat`
-
-Controller heartbeat — resets safety-mode timer.
-
-**Response:**
-```json
-{"status": "ok", "safety_mode": false, "last_heartbeat": "2026-04-13T10:00:00"}
-```
-
----
-
-#### `GET /state/safety`
-
-Current safety mode status.
-
-**Response:**
-```json
-{"safety_mode": false, "last_heartbeat": "2026-04-13T10:00:00"}
-```
-
----
-
-### Data Routes (`/data`)
-
-#### `GET /data/data`
-
-Measurement history grouped by variable.
-
-**Query params:** `device_id` (default: 1), `limit` (default: 10)
-
-**Response:**
-```json
-{
-  "device_id": 1,
-  "data": {
-    "Temperature": {
-      "unit": "°C",
-      "latest": 25.3,
-      "latest_at": "2026-04-13T10:00:00",
-      "history": [
-        {"value": 25.3, "collected_at": "2026-04-13T10:00:00"},
-        {"value": 25.1, "collected_at": "2026-04-13T09:55:00"}
-      ]
-    }
-  }
-}
-```
-
----
-
-#### `GET /data/latest`
-
-Most recent value only for each variable.
-
-**Query params:** `device_id` (default: 1)
-
----
-
-### Video & Camera Routes
-
-#### `GET /video/stream`
-
-Live MJPEG stream.
-
-- Content-Type: `multipart/x-mixed-replace; boundary=frame`
-- HTML usage: `<img src="http://<pi-ip>:8080/video/stream">`
-
----
-
-#### `POST /camera/capture`
-
-Capture a photo immediately (outside the scheduled interval).
-
-**Response:**
-```json
-{"status": "ok", "path": "/data/photos/20260413_100000_1_2.jpg"}
-```
-
----
-
-### Settings Routes (`/settings`)
-
-#### `GET /settings/`
-
-Device info, sync metadata, and pending item counts.
-
-**Response:**
-```json
-{
-  "device": {
-    "id_device": 1,
-    "name": "Greenhouse A",
-    "mac_address": "aa:bb:cc:dd:ee:ff",
-    "location": "Shed A",
-    "device_mode": "MEDIUM",
-    "is_dirty": false,
-    "updated_at": "2026-05-14T10:00:00"
-  },
-  "safety_mode": false,
-  "sync": {
-    "last_config_sync": "2026-05-14T09:00:00",
-    "last_sensor_persist": "2026-05-14T09:55:00",
-    "last_data_push": "2026-05-14T09:55:00",
-    "pending_measurements": 12,
-    "pending_photos": 1
-  }
-}
-```
-
----
-
-#### `PATCH /settings/device-mode`
-
-Update device operating mode (`LOW`, `MEDIUM`, `HIGH`).
-
-**Body:**
-```json
-{"device_mode": "HIGH"}
-```
-
----
-
-#### `GET /settings/thresholds`
-
-List all thresholds for the active cultivation phase.
-
-**Response:** Array of threshold objects with `variable_name`, `phase_name`, `is_default_phase`, `is_dirty`.
-
----
-
-#### `PATCH /settings/thresholds/{id}`
-
-Update a threshold value. Sets `is_dirty=True` and updates `updated_at` for cloud sync.
-
-**Body:**
-```json
-{"min_value": 18.0, "max_value": 28.0, "target_value": 23.0}
-```
-
----
-
-#### `GET /settings/cultivation`
-
-Current cultivation with full phase history.
-
-**Response:** Cultivation object with `phases` array, each with `is_current` flag.
-
----
-
-#### `POST /settings/cultivation/advance-phase`
-
-Close the current `CultivationPhase` (sets `ended_at`) and open the next growth phase.
-
-**Body:**
-```json
-{"next_growth_phase_id": 3}
-```
-
----
-
-#### `POST /settings/thresholds`
-
-Create a new threshold for the active cultivation.
-
-**Body:**
-```json
-{"id_variable": 1, "id_growth_phase": 2, "min_value": 20.0, "max_value": 30.0, "target_value": 25.0}
-```
-
-**Response:**
-```json
-{"id_threshold": 7}
-```
-
----
-
-#### `GET /settings/growth-phases`
-
-Return growth phases for the active cultivation's species, ordered by `phase_order`.
-
----
-
-#### `GET /settings/variables`
-
-Return all variables available for threshold creation.
-
----
-
-#### `GET /settings/plant-species`
-
-Return all plant species available for starting a cultivation.
-
----
-
-#### `GET /settings/cultivation/template-sources`
-
-Return distinct threshold template sources available for a species.
-
-**Query params:** `id_plant_species` (int)
-
-**Response:**
-```json
-{"sources": ["manual", "ml"]}
-```
-
----
-
-#### `POST /settings/cultivation/begin`
-
-Start a new cultivation. Fails with 409 if one is already active. Auto-copies `SpeciesThreshold` templates as `Threshold` rows (`is_dirty=True`). Template source priority: `template_source` param → `ml` → `manual`.
-
-**Body:**
-```json
-{"id_plant_species": 3, "notes": "Spring run", "template_source": "ml"}
-```
-
-**Response:**
-```json
-{
-  "id_cultivation": 5,
-  "id_plant_species": 3,
-  "species_name": "Tomato",
-  "id_cultivation_phase": 9,
-  "id_growth_phase": 2,
-  "started_at": "2026-05-14T08:00:00",
-  "thresholds_copied": 8,
-  "template_source_used": "ml"
-}
-```
-
----
-
-#### `POST /settings/cultivation/end`
-
-End the current active cultivation. Closes the open `CultivationPhase` and sets `end_date`.
-
-**Response:**
-```json
-{"id_cultivation": 5, "ended_at": "2026-05-14T18:00:00"}
-```
-
----
-
-#### `POST /settings/sync`
-
-Trigger an immediate cloud sync (fire-and-forget asyncio task). Returns immediately — the sync runs asynchronously in the background. Check `GET /settings/` for updated sync timestamps after a few seconds.
-
-**Response:**
-```json
-{"status": "accepted", "message": "Sync triggered — check /settings/ for result"}
-```
+**Base URL:** `http://<pi-address>:8080` · Swagger: `http://<pi-address>:8080/docs`
+
+!!! note "Network access"
+    The node's dashboard and API are meant for a trusted local network or the VPN. Never port-forward them.
+
+### State
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/state/` | System state for the controller's Sense-Think-Act loop |
+| `POST` | `/state/heartbeat` | Controller heartbeat; keeps safety mode from engaging |
+| `GET` | `/state/safety` | Safety mode status and last heartbeat time |
+
+### Actuators
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/actuator/` | Every actuator with its capabilities, state and provenance |
+| `POST` | `/actuator/{id}/command` | Command an actuator (refused with 409 when a safety bound blocks it) |
+| `POST` | `/actuator/by-name/{name}/command` | Command an actuator by name |
+| `POST` | `/actuator/{id}/release` | Drop the manual-override mark ("return to automatic") |
+| `PATCH` | `/actuator/{id}/fail-safe` | Set whether the actuator keeps running through a safety-mode trip |
+
+### Data
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/data` | Measurement history from the local database |
+| `GET` | `/data/latest` | Latest measurement per active sensor component |
+| `POST` | `/data/current_values` | Save the current sensor readings |
+
+### Camera
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/camera/capture` | Capture a photo |
+| `GET` | `/camera/stream` | Live MJPEG camera stream |
+
+### Settings
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/settings` | Device settings |
+| `PATCH` | `/settings/device-mode` | Change the device operating mode |
+| `GET` / `POST` | `/settings/control-rules` | List or create control rules |
+| `PATCH` | `/settings/control-rules/{id}` | Edit a control rule |
+| `GET` | `/settings/growth-phases` | Growth phases |
+| `GET` | `/settings/variables` | Variables |
+| `GET` | `/settings/plant-species` | Plant species |
+| `GET` | `/settings/components` | Components configured on the device, with calibration and liveness |
+| `POST` | `/settings/components/{id}/calibration` | Calibrate a component |
+| `GET` | `/settings/cultivation` | Active cultivation with its phase history |
+| `GET` | `/settings/cultivation/template-sources` | Template sources available for a species |
+| `POST` | `/settings/cultivation/begin` | Begin a cultivation |
+| `POST` | `/settings/cultivation/end` | End the active cultivation |
+| `POST` | `/settings/cultivation/advance-phase` | Advance to the next growth phase |
+| `POST` | `/settings/sync` | Trigger a full cloud sync now |
+| `GET` / `PATCH` | `/settings/runtime` | Per-device runtime settings (task intervals, heartbeat timeout) |
+| `POST` | `/settings/reinit-drivers` | Re-run the driver bring-up from the local database |
+
+### Meta and generic CRUD
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/` | Local dashboard, or API status when no dashboard is bundled |
+| `GET` | `/version` | Build running on the device |
+
+Generic CRUD routes (`GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}`) exist for `/device`, `/plant_species`, `/cultivation`, `/component_model`, `/device_component`, `/unit`, `/variable`, `/measurement` and `/component_capability`.
 
 ---
 
 ## Cloud API
 
-The cloud API is accessed through the **Gateway** (port 80), which routes requests to the appropriate backend service.
+The cloud API is not publicly reachable yet. For local development, run the cloud stack and open `http://localhost:8000/docs`.
 
-**Base URL:** `http://<cloud-host>:80`  (or HTTPS in production)
+### Gateway routing
 
-Interactive docs: `http://<cloud-host>:8000/docs` (greenthumb-api direct access)
+| Path | Service |
+|------|---------|
+| `/auth/**` | auth-service |
+| `/admin/**`, `/sync/**`, `/` | greenthumb-api |
 
-### Gateway Routing
+account-service is not routed by the gateway; only auth-service calls it.
 
-| Path prefix | Backend service | Auth required |
-|-------------|-----------------|---------------|
-| `/auth/**` | auth-service :8081 | None (public login) |
-| `/accounts/**` | account-service :8082 | JWT (user) |
-| `/admin/**` | greenthumb-api :8000 | JWT (user) |
-| `/sync/**` | greenthumb-api :8000 | Device token (Bearer) |
+### Auth (`/auth`)
 
----
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/auth/login` | Returns `{token}` and sets the HttpOnly `access_token` cookie |
+| `POST` | `/auth/logout` | Clears the `access_token` cookie |
+| `POST` | `/auth/register` | Create a user account (admin only) |
+| `GET` | `/auth/validate` | Internal, called by greenthumb-api: returns `{id_user, role}` |
 
-### Auth Routes (`/auth`)
+### Admin (`/admin`)
 
-#### `POST /auth/login`
+Every `/admin` route needs a logged-in user: the `access_token` cookie, or `Authorization: Bearer <jwt>`. Routes marked **admin** also need the `admin` role.
 
-Returns a JWT for a registered user.
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/admin/me` | Caller's user id and current role |
+| `GET` | `/admin/version` | Cloud build, including the sync contract version |
+| `GET` / `POST` | `/admin/devices` | List or create devices |
+| `GET` / `PATCH` | `/admin/devices/{id}` | Read or edit a device |
+| `DELETE` | `/admin/devices/{id}` | Delete a device (**admin**) |
+| `POST` | `/admin/devices/{id}/token` | Generate a new device token; the old one stops working (**admin**) |
+| `POST` | `/admin/devices/epoch/bump` | Make every device re-push its local data on the next sync (**admin**) |
+| `GET` | `/admin/users`, `/admin/users/{id_user}` | List or read users (**admin**) |
+| `PATCH` | `/admin/users/{id_user}` | Edit a user (**admin**) |
+| `GET` | `/admin/alerts` | Fleet alerts (**admin**) |
+| `POST` | `/admin/alerts/{id_system_alert}/resolve` | Resolve an alert (**admin**) |
+| `GET` | `/admin/cultivations`, `/admin/cultivations/{id}` | List or read cultivations |
+| `PATCH` | `/admin/cultivations/{id}` | Edit a cultivation |
+| `GET` | `/admin/cultivation-phases`, `/admin/cultivation-phases/{id}` | Cultivation phases (read-only) |
+| `GET` | `/admin/control-rule-logs` | Control-rule log (read-only) |
+| `GET` | `/admin/actuator-logs/daily` | Daily actuator-log rollup |
+| `GET` | `/admin/device-components/effects`, `/admin/device-components/{id_device_component}/effects` | Resolved actuator effects |
 
-**Body:**
-```json
-{"email": "admin@example.com", "password": "secret"}
-```
+**Catalog CRUD** (`GET` for any logged-in user; `POST`, `PUT`, `DELETE` **admin**): `/admin/units`, `/admin/variables`, `/admin/plant-species`, `/admin/growth-phases`, `/admin/component-models`, `/admin/device-models`, `/admin/component-capabilities`, `/admin/species-rules`, `/admin/substances`, `/admin/substance-effects`, `/admin/component-model-effects`, `/admin/actuator-effects`.
 
-**Response:**
-```json
-{"token": "eyJ...", "expires_in": 86400}
-```
+**Owner-scoped CRUD** (a user sees only their own rows; an admin sees all): `/admin/properties`, `/admin/containers`, `/admin/device-components`, `/admin/control-rules`, `/admin/measurements`, `/admin/photos`, `/admin/actuator-logs`, `/admin/calibration-logs`.
 
----
+CRUD routes follow the pattern `GET` (list), `GET /{id}`, `POST`, `PUT /{id}`, `DELETE /{id}`.
 
-#### `GET /auth/validate`
+### Sync (`/sync`)
 
-Validate a JWT (called internally by greenthumb-api, not typically called directly).
+Called by the Pi. Every route needs `Authorization: Bearer <device_token>`; the token must match the device's `device_token`.
 
-**Headers:** `Authorization: Bearer <jwt>`
-
-**Response:**
-```json
-{"id_user": "550e8400-e29b-41d4-a716-446655440000"}
-```
-
----
-
-### Admin Routes (`/admin`)
-
-All `/admin/**` routes require `Authorization: Bearer <jwt>` from a logged-in user.
-
-#### Device Management
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/admin/devices/` | List all devices |
-| `POST` | `/admin/devices/` | Register a new device |
-| `GET` | `/admin/devices/{id}` | Get device details |
-| `PUT` | `/admin/devices/{id}` | Update device |
-| `DELETE` | `/admin/devices/{id}` | Delete device |
-| `POST` | `/admin/devices/{id}/token` | Rotate `device_token` — returns new token once |
-
-#### Fleet View
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/admin/fleet/` | All devices with online/stale/offline status based on `updated_at` |
-
-#### Cultivation & Species
-
-Full CRUD is available for all entities in the cultivation tree:
-
-| Resource | Prefix |
-|----------|--------|
-| Plant species | `/admin/plant-species` |
-| Growth phases | `/admin/growth-phases` |
-| Cultivations | `/admin/cultivations` |
-| Cultivation phases | `/admin/cultivation-phases` |
-| Thresholds | `/admin/thresholds` |
-
-#### Hardware Catalog (read-only in admin dashboard)
-
-| Resource | Prefix |
-|----------|--------|
-| Sensor models | `/admin/sensor-models` |
-| Actuator models | `/admin/actuator-models` |
-| Variables | `/admin/variables` |
-| Units | `/admin/units` |
-
-#### Device Configuration Catalog
-
-Full CRUD for device-level hardware and threshold configuration:
-
-| Resource | Prefix |
-|----------|--------|
-| Device sensors | `/admin/device-sensors` |
-| Sensor capabilities | `/admin/sensor-capabilities` |
-| Device actuators | `/admin/device-actuators` |
-| Species thresholds | `/admin/species-thresholds` |
-| Actuator logs | `/admin/actuator-logs` |
-
-#### Data & Media
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/admin/measurements/` | Query measurements (filter by device, variable, limit) |
-| `GET` | `/admin/photos/` | List photo metadata (filter by device, cultivation) |
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/sync/devices/{id}/config` | Pull the shared catalog and the device configuration |
+| `POST` | `/sync/devices/{id}/ping` | Liveness ping |
+| `POST` | `/sync/devices/{id}/measurements` | Push measurements |
+| `POST` | `/sync/devices/{id}/actuator-logs` | Push actuator logs |
+| `POST` | `/sync/devices/{id}/calibration-logs` | Push calibration logs |
+| `POST` | `/sync/devices/{id}/photos` | Push one photo (multipart); the API uploads it to R2 |
+| `POST` | `/sync/devices/{id}/photos/batch` | Push several photos; returns 207 with a per-photo result |
+| `POST` | `/sync/devices/{id}/state` | Push device-owned state (cultivations, phases, control rules) |
 
 ---
 
-### Sync Routes (`/sync`)
+## Error responses
 
-All `/sync/**` routes require `Authorization: Bearer <device_token>` where the token matches the requesting device's `device.device_token`.
-
-#### `GET /sync/devices/{id}/config`
-
-Pull the full `FullSyncPayload` for the device from the cloud database.
-
-**Response:** `FullSyncPayload` JSON (same schema as built by `config_builder.py`):
-
-```json
-{
-  "device": {"id_device": 1, "name": "Greenhouse A"},
-  "sensors": [...],
-  "actuators": [...],
-  "active_phase": {
-    "id_cultivation_phase": 2,
-    "id_cultivation": 1,
-    "thresholds": [...]
-  }
-}
-```
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing or invalid user or device token |
+| `403` | Role not allowed, or the row belongs to another owner |
+| `404` | Not found |
+| `409` | Sync contract mismatch (sync), or command refused by a safety bound (Pi) |
+| `422` | Validation error |
+| `502` | Upstream failure (auth-service, R2) |
+| `500` | Unexpected error |
 
 ---
 
-#### `POST /sync/devices/{id}/measurements`
-
-Bulk-insert measurements from the Pi. Skips malformed rows.
-
-**Body:**
-```json
-[
-  {"id_device_sensor": 1, "id_variable": 1, "value": 25.3, "collected_at": "2026-04-13T10:00:00"},
-  {"id_device_sensor": 2, "id_variable": 2, "value": 65.1, "collected_at": "2026-04-13T10:00:00"}
-]
-```
-
-**Response:**
-```json
-{"inserted": 2}
-```
-
----
-
-#### `POST /sync/devices/{id}/photos`
-
-Receive a JPEG photo from the Pi, upload it to Cloudflare R2, and store the metadata row. The Pi never holds object-storage credentials — the cloud API handles the upload.
-
-**Content-Type:** `multipart/form-data`
-
-**Form fields:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `file` | binary (JPEG) | Yes | Raw photo bytes |
-| `id_device_actuator` | int | Yes | Camera actuator ID |
-| `captured_at` | string (ISO 8601) | Yes | Capture timestamp |
-| `id_cultivation` | int | No | Active cultivation ID |
-| `file_size_bytes` | int | No | File size hint |
-
-**Response:**
-```json
-{"id_photo": 42, "cloud_url": "https://<bucket>.r2.cloudflarestorage.com/plant-photos/1/...", "status": "stored"}
-```
-
-`cloud_url` is `null` if object-storage credentials are not configured on the cloud side.
-
----
-
-#### `PATCH /sync/devices/{id}/local-changes`
-
-Push local threshold edits to the cloud. Uses **last-write-wins** via `updated_at` comparison.
-
-**Body:**
-```json
-{
-  "thresholds": [
-    {"id_threshold": 1, "min_value": 18.0, "max_value": 28.0, "target_value": 23.0, "updated_at": "2026-04-13T09:50:00"}
-  ]
-}
-```
-
----
-
-## Error Responses
-
-| Status | Body | When |
-|--------|------|------|
-| 401 | `{"detail": "Invalid or missing token"}` | Bad/missing auth on any protected route |
-| 403 | `{"detail": "Device ID mismatch"}` | Device token used for wrong device ID |
-| 404 | `{"detail": "Not found"}` | Resource doesn't exist |
-| 422 | Validation error detail | Malformed request body |
-| 500 | `{"detail": "Internal server error"}` | Unexpected server error |
+Index generated from the routers on 2026-10-01; regenerate from `/openapi.json`.

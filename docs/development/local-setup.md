@@ -1,186 +1,100 @@
 # Local Development Setup
 
-Set up a local development environment for GreenThumb.
+Set up a GreenThumb development environment on a Windows workstation. Workstation commands are for PowerShell. Commands that run on the Raspberry Pi are marked as such.
 
 ## Prerequisites
 
-- Python 3.11+
-- Docker and Docker Compose
 - Git
-- (Optional) Raspberry Pi 5 for hardware testing
+- Docker Desktop
+- Python 3.11
+- Node.js 20
+- Access to the GreenThumbProject GitHub organization (the code repositories are private)
 
-## Clone Repositories
+## Clone the repositories
 
-```bash
-# Create workspace
-mkdir greenthumb && cd greenthumb
+Clone the repositories next to each other in one folder. The schema tooling expects `database` beside `rasp5` and `cloud`.
 
-# Clone repositories
-git clone https://github.com/GreenThumbProject/rasp5.git
-git clone https://github.com/GreenThumbProject/greenthumb-core.git
+```powershell
+mkdir greenthumb
+cd greenthumb
+git clone --recurse-submodules https://github.com/GreenThumbProject/rasp5.git
+git clone --recurse-submodules https://github.com/GreenThumbProject/greenthumb-cloud.git cloud
+git clone https://github.com/GreenThumbProject/database.git
 git clone https://github.com/GreenThumbProject/docs.git
 ```
 
-## greenthumb-core Development
+## Shared package
 
-### Setup
+The shared `greenthumb` package (models, CRUD helpers, sync) lives in the `greenthumb-models` repository, which is a submodule of both `rasp5` and `cloud`. Edit it in `rasp5\greenthumb-models`. CI moves the cloud's copy to the same commit (see [CI/CD](ci-cd.md)).
 
-```bash
-cd greenthumb-core
+## Node API tests
+
+There is no mock mode: the node API runs only on a Pi with its hardware attached. On a workstation, run its test suite instead.
+
+```powershell
+cd rasp5\microcontroller-api
 python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# .venv\Scripts\activate    # Windows
-
-pip install -e .
+.venv\Scripts\python.exe -m pip install -e "..\greenthumb-models[api,test]" -e ..\greenthumb-rpi5 -r requirements-test.txt loguru
+.venv\Scripts\python.exe -m pytest
 ```
 
-### With Hardware Support
+## Local dashboard
 
-```bash
-pip install -e ".[rpi5]"
+```powershell
+cd rasp5\local-dashboard
+npm ci
+npm test
+npm run dev
 ```
 
-!!! note
-    Hardware dependencies only work on Raspberry Pi with I2C enabled.
+The dev server sends API calls to `http://localhost:8080`, so pages that need live data only work with a node API reachable there.
 
-### Testing
+## Cloud stack (local development)
 
-```python
-# Test database utilities
-from greenthumb_core.db import get_engine
-engine = get_engine()
-print("Database connected!")
-
-# Test models
-from greenthumb_core.models import Device
-print(Device.__tablename__)
+```powershell
+cd cloud
+Copy-Item .env.example .env
+docker compose up --build
+# Admin dashboard: http://localhost:443 (plain HTTP)
+# API docs: http://localhost:8000/docs
+# Landing page: http://localhost:8083
 ```
 
-## rasp5 Development
+## Database schema
 
-### Setup
+Schema changes are made only in the `database` repository: edit `schemas/` and add a dated file in `migrations/`. Then refresh the generated copy in `rasp5` or `cloud` from that folder:
 
-```bash
+```powershell
 cd rasp5
-cp .env.example .env
-# Edit .env with your values
+cmd /c make schema-sync
 ```
 
-### Run with Docker
+## Documentation
 
-```bash
-make up        # Start services
-make logs      # View logs
-make down      # Stop services
-```
-
-### Run API Locally (without sensors)
-
-```bash
-cd microcontroller-api
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Need greenthumb-core
-pip install git+https://${GH_PAT}@github.com/GreenThumbProject/greenthumb-core.git
-
-# Start PostgreSQL
-docker compose up -d db
-
-# Run API
-uvicorn app:app --reload --port 8080
-```
-
-## docs Development
-
-### Setup
-
-```bash
+```powershell
 cd docs
 python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m mkdocs serve
+.venv\Scripts\python.exe -m mkdocs build --strict
 ```
 
-### Preview
+`mkdocs serve` previews the site at `http://localhost:8000`.
+
+## On the Pi
+
+On the Pi (Linux), update the node from the `deploy/` folder:
 
 ```bash
-mkdocs serve
-# Open http://localhost:8000
-```
-
-### Build
-
-```bash
-mkdocs build
-# Output in site/
-```
-
-## Testing on Raspberry Pi
-
-### SSH Setup
-
-```bash
-# Copy SSH key
-ssh-copy-id pi@<raspberry-pi-ip>
-
-# Connect
-ssh pi@<raspberry-pi-ip>
-```
-
-### Deploy for Testing
-
-```bash
-# On Raspberry Pi
-git clone https://github.com/GreenThumbProject/rasp5.git
-cd rasp5
+cd ~/Documents/greenthumb/rasp5/deploy
+make pull
 make up
 ```
 
-### View Logs
+!!! warning
+    Never run the root `rasp5` Makefile on the Pi. It is for workstations, and `make dev-reset` wipes the database and photo volumes.
 
-```bash
-make logs
-# Or specific service
-docker compose logs -f controller
-```
+## Related
 
-## IDE Setup
-
-### VS Code Extensions
-
-- Python
-- Pylance
-- Docker
-- YAML
-- Markdown All in One
-
-### settings.json
-
-```json
-{
-    "python.defaultInterpreterPath": ".venv/bin/python",
-    "python.formatting.provider": "black",
-    "editor.formatOnSave": true,
-    "[python]": {
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true
-        }
-    }
-}
-```
-
-## Environment Variables
-
-Create `.env` files as needed:
-
-```bash
-# rasp5/.env
-DB_PASSWORD=dev_password
-DOCKERHUB_USERNAME=your_username
-GH_PAT=ghp_xxxxx
-
-# For local testing without Docker
-DATABASE_URL=postgresql://greenthumb:dev_password@localhost:5432/greenthumb
-```
+- [Contributing](contributing.md) - Code standards, branches, commit messages
+- [CI/CD](ci-cd.md) - Automated builds and deployment

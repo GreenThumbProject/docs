@@ -27,3 +27,4 @@ env/
 Thumbs.db
 
 /docs/superpowers/
+.gstack/

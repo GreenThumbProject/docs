@@ -1,6 +1,6 @@
 # Resumo do Projeto
 
-Este documento fornece uma visão geral completa do projeto GreenThumb.
+Este documento apresenta uma visão geral do projeto GreenThumb.
 
 ## Visão
 
@@ -8,36 +8,31 @@ O GreenThumb é um **sistema de produção vegetal em ambiente controlado** que 
 
 ## Status Atual
 
-### Fase de Pesquisa (2025-2026)
+### Origem
 
-O sistema está sendo desenvolvido como parte de um projeto de iniciação científica PIBITI de 12 meses no Insper.
+O GreenThumb começou como um projeto PIBITI de iniciação tecnológica de 12 meses no Insper (2025–2026). A fase de pesquisa terminou com o relatório final em agosto de 2026; o desenvolvimento do sistema continua.
 
-**Objetivos Principais:**
+### O que existe hoje
 
-1. Construir uma plataforma confiável de cultivo em ambiente controlado
-2. Possibilitar o controle das variáveis ambientais por meio de sensores e automação
-3. Coletar dados de cultivo consistentes e bem estruturados
-4. Validar o sistema com um protótipo físico
+- Nó de borda em um Raspberry Pi 5, executado com Docker Compose (PostgreSQL, API do dispositivo, controlador, dashboard local, Watchtower)
+- Drivers de sensores: AHT10, BMP280, TSL2561, DS18B20, boia de nível, sondas de pH e TDS/CE, câmera USB
+- Atuadores acionados por relé: luz de cultivo, exaustor, bombas d'água e de ar, bombas dosadoras peristálticas
+- Controlador com regras por limiar, agenda, intervalo e após-atuador, limites de segurança e watchdog de heartbeat (modo de segurança)
+- Fotos periódicas e transmissão ao vivo da câmera
+- Sincronização offline-first com uma nuvem própria (PostgreSQL 17 + TimescaleDB; fotos no Cloudflare R2)
+- API na nuvem, serviços de autenticação e dashboard administrativo (ainda não públicos)
+- CI/CD: GitHub Actions → Docker Hub
 
-### Trabalho Concluído
+### Próximos passos
 
-- ✅ Deploy no Raspberry Pi 5 com Docker Compose
-- ✅ Pipeline CI/CD (GitHub Actions → Docker Hub → Watchtower)
-- ✅ Integração de sensores I2C (AHT10, BMP280, TSL2561)
-- ✅ Banco de dados PostgreSQL para armazenamento
-- ✅ API REST FastAPI com gerenciamento centralizado de dispositivos
-- ✅ Streaming de vídeo ao vivo
-- ✅ Biblioteca compartilhada (`greenthumb-core`)
-- ✅ Cliente controlador com loop Sense-Think-Act
-- ✅ Sistema de atuadores (LED RGB, bomba d'água)
-- ✅ Modo de segurança e mecanismo de heartbeat
+- 🔄 Finalização do protótipo físico
+- 🔄 Calibração das bombas dosadoras e das sondas de pH e TDS
+- Primeiro ciclo de cultivo (tomate cereja)
 
-### Em Andamento
+### Planejado
 
-- 🔄 Construção do protótipo físico da estufa
-- 🔄 Integração de sensores de pH e CE
-- 🔄 Sincronização com a nuvem (PostgreSQL + TimescaleDB próprio, com Cloudflare R2 para imagens)
-- 🔄 Visão computacional para análise de crescimento
+- **Visão Computacional**: OpenCV para análise de crescimento
+- **Machine Learning**: Modelos de predição de crescimento
 
 ## Stack Tecnológica
 
@@ -50,25 +45,25 @@ O sistema está sendo desenvolvido como parte de um projeto de iniciação cient
 | ORM | SQLModel |
 | Containers | Docker Compose |
 | CI/CD | GitHub Actions → Docker Hub |
+| Serviços na nuvem | FastAPI; Java (Spring Boot, Spring Cloud Gateway) |
+| Dashboards | React |
+| Dados na nuvem | PostgreSQL 17 + TimescaleDB; Cloudflare R2 (fotos) |
+| Rede | WireGuard |
 
 ### Sensores
 
 - **AHT10**: Temperatura e umidade
 - **BMP280**: Pressão atmosférica e temperatura
 - **TSL2561**: Intensidade luminosa
+- **DS18B20**: Temperatura da água
+- **Boia de nível**: Nível do reservatório (cheio ou vazio)
+- **Sondas de pH e TDS/CE**: pH e condutividade da solução nutritiva
 - **Câmera USB**: Fotos das plantas para visão computacional
 
 ### Atuadores
 
-- **LED RGB**: Iluminação com controle PWM
-- **Bomba d'água**: Irrigação com controle PWM
-
-### Planejado
-
-- **PostgreSQL 17 + TimescaleDB**: Banco de dados próprio na nuvem
-- **Cloudflare R2**: Armazenamento de imagens
-- **Visão Computacional**: OpenCV para análise de crescimento
-- **Machine Learning**: Modelos de predição de crescimento
+- **Luz de cultivo, exaustor, bombas d'água e de ar**: acionados por relé
+- **Bombas dosadoras peristálticas**: dosagem de nutrientes e pH com limites de segurança
 
 ## Arquitetura do Sistema
 
@@ -79,44 +74,33 @@ Raspberry Pi 5
 ├── PostgreSQL (banco de dados)
 ├── microcontroller-api (API + controle de hardware)
 ├── controller (cliente com loop Sense-Think-Act)
-├── cron (tarefas agendadas)
+├── local-dashboard (SPA React)
 └── watchtower (atualizações automáticas)
 ```
 
 Todos os serviços rodam em containers Docker e compartilham uma rede comum.
 
+Uma nuvem própria (API, gateway, serviços de autenticação, dashboard administrativo, PostgreSQL + TimescaleDB) recebe os dados sincronizados. Veja [Cloud Backend](../components/cloud.md).
+
 ## Organização dos Repositórios
 
-| Repositório | Propósito |
-|-------------|-----------|
-| `greenthumb-core` | Biblioteca Python compartilhada |
-| `rasp5` | Deploy do Raspberry Pi 5 |
-| `microcontroller-api-client` | Scripts de controle |
-| `database` | Esquemas do banco de dados |
-| `cron` | Tarefas agendadas |
-| `docs` | Esta documentação |
-| `research` | Artigos de pesquisa |
+Veja [Repositórios](../architecture/repositories.md). A maioria dos repositórios é privada; esta documentação e o perfil da organização são públicos.
 
 ## Coleta de Dados
 
 O sistema coleta:
 
-- **Dados de sensores** via API sob demanda
-- **Fotos** para análise de visão computacional
+- **Dados de sensores**, registrados periodicamente
+- **Fotos**, capturadas periodicamente para futuros trabalhos de visão computacional
 
-Os dados são armazenados localmente e serão sincronizados com a nuvem para treinamento de ML.
+Os dados são armazenados primeiro no nó e sincronizados com a nuvem quando há conexão.
 
 ## Objetivos de Longo Prazo
 
-1. **Múltiplas Estufas**: Suportar o gerenciamento de mais de uma unidade de cultivo
+1. **Múltiplos nós**: a nuvem já registra e lista vários dispositivos; o cadastro autônomo de novos nós ainda está por vir.
 2. **Automação Aprimorada**: Refinar o controle e o monitoramento ambiental
 
 ## Contato
 
 - **Desenvolvedor**: Henrique Bucci R. Netto
-- **Email**: henriquebrn@al.insper.edu.br
 - **GitHub**: [GreenThumbProject](https://github.com/GreenThumbProject)
-
----
-
-*Última atualização: Fevereiro de 2026*

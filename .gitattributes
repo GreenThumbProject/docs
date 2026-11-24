@@ -1,0 +1,45 @@
+# Normalise line endings across this repository.
+#
+# Why this file exists: on 2026-08-27 every code repo in the project reported its
+# entire tree as rewritten -- thousands of insertions and deletions with zero
+# content change, purely CRLF vs LF. The index stored LF while the Windows
+# working tree stored CRLF. That stayed invisible locally only because Git for
+# Windows ships core.autocrlf=true in its system config; any checkout without it
+# (CI, a Linux clone, a cold index) saw the whole tree as modified. `git diff`
+# was useless for review and real edits were buried in the noise -- one genuine
+# 43-line change in `cloud` was invisible until whitespace was filtered out.
+#
+# `text=auto eol=lf` stores AND checks out every text file with LF, so the index
+# and the working tree agree regardless of any machine's core.autocrlf setting.
+#
+# One-time cleanup after adding this file:
+#   git add --renormalize .
+#   git commit -m "chore: normalise line endings to LF (.gitattributes)"
+# Do that as its own commit, on a clean tree, so the noise is isolated to it.
+
+* text=auto eol=lf
+
+# Windows shells need real CRLF on disk.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets: never converted, never diffed as text.
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.webp    binary
+*.ico     binary
+*.pdf     binary
+*.xlsx    binary
+*.docx    binary
+*.pptx    binary
+*.zip     binary
+*.jar     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.otf     binary
+*.mp4     binary
+*.mwb     binary
+*.mwb.bak binary
